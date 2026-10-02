@@ -10,6 +10,7 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   const password = String(form.get("password") ?? "");
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error?.code === "user_banned") return { error: "This account doesn't have access. Ask a family admin.", email };
   if (error || !data.user) return { error: "That email and password did not match.", email };
   const { data: profile } = await supabase.from("profiles").select("active").eq("id", data.user.id).maybeSingle();
   if (!profile?.active) {

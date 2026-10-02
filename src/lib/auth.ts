@@ -55,7 +55,7 @@ export async function alertCircles(me: Member): Promise<Circle[]> {
 }
 
 /** Listings, requests, lists and the rest can be shared with any circle. */
-export async function shareableCircles(_me: Member): Promise<Circle[]> {
+export async function shareableCircles(): Promise<Circle[]> {
   return allCircles();
 }
 

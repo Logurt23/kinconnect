@@ -74,7 +74,7 @@ export default async function HomePage() {
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Section title="Unread alerts" action={<Link href="/alerts" className="text-xs font-semibold text-brand">All alerts</Link>}>
-          {unread.length === 0 ? <Empty>You're caught up.</Empty> : (
+          {unread.length === 0 ? <Empty>You&apos;re caught up.</Empty> : (
             <ul className="divide-y divide-line">
               {unread.slice(0, 6).map((a) => (
                 <li key={a.id} className="py-2 first:pt-0 last:pb-0">

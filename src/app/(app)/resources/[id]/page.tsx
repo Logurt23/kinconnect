@@ -6,7 +6,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { offerLabel } from "@/components/OfferLabel";
 import { CircleBadges, Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
-import { dateLabel } from "@/lib/format";
+import { dateLabel, isoDay } from "@/lib/format";
 import { signedUrls } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 import { decide, reserve, setListingStatus } from "../actions";
@@ -27,8 +27,8 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
   ]);
   const photos = [...(l.photos ?? [])].sort((a: { sort: number }, b: { sort: number }) => a.sort - b.sort).map((p: { path: string }) => p.path);
   const urls = await signedUrls("listing-photos", photos, 300);
-  const today = new Date().toISOString().slice(0, 10);
-  const end = l.loan_days ? new Date(Date.now() + l.loan_days * 86400000).toISOString().slice(0, 10) : "";
+  const today = isoDay(0);
+  const end = l.loan_days ? isoDay(l.loan_days) : "";
   const myPending = (reservations ?? []).find((r) => r.requester_id === me.id && ["pending", "confirmed"].includes(r.status));
 
   return (

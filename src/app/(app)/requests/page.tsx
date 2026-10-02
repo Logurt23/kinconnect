@@ -20,7 +20,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
   const supabase = await createClient();
   const [{ data: categories }, circles, pick, { data }] = await Promise.all([
     supabase.from("categories").select("id, name").eq("scope", "request").order("sort"),
-    allCircles(), shareableCircles(me),
+    allCircles(), shareableCircles(),
     supabase.from("service_requests")
       .select("id, status, needed_at, where_text, note, circle_ids, requester_id, claimed_by, category:categories(name), requester:profiles!service_requests_requester_id_fkey(display_name), claimer:profiles!service_requests_claimed_by_fkey(display_name)")
       .order("created_at", { ascending: false }).limit(200),
@@ -68,7 +68,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
                       </div>
                       <form action={act} className="flex gap-1">
                         <input type="hidden" name="id" value={r.id} />
-                        {r.status === "open" && r.requester_id !== me.id && <ConfirmSubmit name="do" value="claim" className="btn-primary py-1">I'll do it</ConfirmSubmit>}
+                        {r.status === "open" && r.requester_id !== me.id && <ConfirmSubmit name="do" value="claim" className="btn-primary py-1">I&apos;ll do it</ConfirmSubmit>}
                         {r.status === "claimed" && r.claimed_by === me.id && <ConfirmSubmit name="do" value="unclaim" className="btn-small">Unclaim</ConfirmSubmit>}
                         {r.status === "claimed" && (r.claimed_by === me.id || r.requester_id === me.id) && <ConfirmSubmit name="do" value="done" className="btn-small">Mark done</ConfirmSubmit>}
                         {["open", "claimed"].includes(r.status) && r.requester_id === me.id && <ConfirmSubmit name="do" value="cancel" className="btn-small" confirm="Cancel this request?">Cancel</ConfirmSubmit>}

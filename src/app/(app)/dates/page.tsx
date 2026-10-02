@@ -23,7 +23,7 @@ export default async function DatesPage({ searchParams }: { searchParams: Search
     supabase.from("profiles").select("id, display_name, birthday").eq("active", true).order("display_name"),
     supabase.from("milestones").select("id, kind, title, note, happened_on, link_url, posted_by, subject:profiles!milestones_subject_id_fkey(display_name)")
       .order("happened_on", { ascending: false }),
-    shareableCircles(me),
+    shareableCircles(),
   ]);
   const withBirthday = (people ?? []).filter((p) => p.birthday).map((p) => ({ ...p, ...nextBirthday(p.birthday!) }));
   const reminders = withBirthday.filter((p) => p.days === 0 || p.days <= 14).sort((a, b) => a.days - b.days);

@@ -40,3 +40,10 @@ export function nextBirthday(birthday: string, today = new Date()) {
   const days = Math.round((next.getTime() - start.getTime()) / 86400000);
   return { date: next, days };
 }
+
+/** YYYY-MM-DD for today plus n days, for date inputs. */
+export function isoDay(n = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}

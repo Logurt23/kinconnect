@@ -13,7 +13,7 @@ export default async function NewListing({ searchParams }: { searchParams: Searc
   const me = await requireMember();
   const supabase = await createClient();
   const { data: categories } = await supabase.from("categories").select("id, name").eq("scope", "resource").order("sort");
-  const circles = await shareableCircles(me);
+  const circles = await shareableCircles();
   return (
     <div className="max-w-3xl space-y-5">
       <PageHeader icon={Boxes} title="New listing"><Link href="/resources" className="btn-secondary">Back</Link></PageHeader>
@@ -46,7 +46,7 @@ export default async function NewListing({ searchParams }: { searchParams: Searc
           <div className="sm:col-span-2"><label className="label" htmlFor="pickup_note">Pickup or shipping</label><input className="input" id="pickup_note" name="pickup_note" placeholder="Pick up from the garage, or I can ship" /></div>
           <div><label className="label" htmlFor="digital_link">Link (digital items)</label><input className="input" id="digital_link" name="digital_link" type="url" placeholder="https://" /></div>
           <div><label className="label" htmlFor="digital_instructions">Instructions</label><input className="input" id="digital_instructions" name="digital_instructions" placeholder="Whose login it is, house rules" /></div>
-          <p className="text-xs text-warn sm:col-span-2">Don't put shared passwords here. Keep them in your Vault and share that item if you choose.</p>
+          <p className="text-xs text-warn sm:col-span-2">Don&apos;t put shared passwords here. Keep them in your Vault and share that item if you choose.</p>
           <div className="sm:col-span-2"><label className="label" htmlFor="photos">Photos</label><input className="input" id="photos" name="photos" type="file" accept="image/*" multiple /></div>
           <div className="sm:col-span-2"><CirclePicker circles={circles} defaults={defaultCircleIds(me)} /></div>
           <div className="sm:col-span-2"><ConfirmSubmit className="btn-primary" pending="Listing...">List it</ConfirmSubmit></div>
