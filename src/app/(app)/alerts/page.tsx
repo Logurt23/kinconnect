@@ -3,7 +3,7 @@ import { AlertTriangle, BellRing, Siren } from "lucide-react";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { Flash, type Search } from "@/components/Flash";
 import { CircleBadges, CirclePicker, Empty, PageHeader, Section } from "@/components/ui";
-import { allCircles, defaultCircleIds, requireMember, shareableCircles } from "@/lib/auth";
+import { allCircles, defaultCircleIds, requireMember, alertCircles } from "@/lib/auth";
 import { ago } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { sendAlert } from "./actions";
@@ -14,7 +14,7 @@ export const metadata = { title: "Alerts" };
 export default async function AlertsPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
   const supabase = await createClient();
-  const [circles, pick] = await Promise.all([allCircles(), shareableCircles(me)]);
+  const [circles, pick] = await Promise.all([allCircles(), alertCircles(me)]);
   const defaults = defaultCircleIds(me);
   const [{ data: alerts }, { data: receipts }] = await Promise.all([
     supabase.from("alerts").select("id, kind, message, circle_ids, opened_at, closed_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")

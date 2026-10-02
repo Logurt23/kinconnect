@@ -49,9 +49,14 @@ export const allCircles = cache(async (): Promise<Circle[]> => {
   return (data ?? []) as Circle[];
 });
 
-/** Circles a member may share to: their own, plus every circle for an admin. */
-export async function shareableCircles(me: Member): Promise<Circle[]> {
+/** Alerts go to the sender's own circles; an admin may add any circle (e.g. Extended) per send. */
+export async function alertCircles(me: Member): Promise<Circle[]> {
   return me.role === "admin" ? allCircles() : me.circles;
+}
+
+/** Listings, requests, lists and the rest can be shared with any circle. */
+export async function shareableCircles(_me: Member): Promise<Circle[]> {
+  return allCircles();
 }
 
 /** The default audience: Core when the member is in it, else their first circle. */

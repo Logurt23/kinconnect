@@ -269,7 +269,7 @@ alter table service_requests enable row level security;
 create policy "see requests" on service_requests for select
   using (is_active() and (requester_id = auth.uid() or claimed_by = auth.uid() or circle_ids && my_circle_ids()));
 create policy "open requests" on service_requests for insert
-  with check (requester_id = auth.uid() and is_active() and circle_ids <@ my_circle_ids());
+  with check (requester_id = auth.uid() and is_active());
 create policy "requester edits" on service_requests for update using (requester_id = auth.uid());
 
 -- Claim and finish go through functions so a claimer can't rewrite someone else's request.
