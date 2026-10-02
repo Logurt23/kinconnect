@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { requireMember } from "@/lib/auth";
 import { back, ids, optStr, str } from "@/lib/actions";
 import { toCents } from "@/lib/format";
-import { MAX_UPLOAD, safeName } from "@/lib/storage";
+import { IMAGE_TYPES, MAX_UPLOAD, safeName, sniffType } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 
 export async function createListing(f: FormData) {
@@ -29,9 +29,10 @@ export async function createListing(f: FormData) {
   if (error) back(P, { error: error.message });
   const photos = f.getAll("photos").filter((p): p is File => p instanceof File && p.size > 0);
   for (const [i, photo] of photos.entries()) {
-    if (!photo.type.startsWith("image/") || photo.size > MAX_UPLOAD) continue;
+    const type = photo.size <= MAX_UPLOAD ? await sniffType(photo) : null;
+    if (!type || !IMAGE_TYPES.includes(type)) continue;
     const path = `${me.id}/${data.id}/${randomUUID()}-${safeName(photo.name)}`;
-    const up = await supabase.storage.from("listing-photos").upload(path, photo, { contentType: photo.type });
+    const up = await supabase.storage.from("listing-photos").upload(path, photo, { contentType: type });
     if (!up.error) await supabase.from("listing_photos").insert({ listing_id: data.id, path, sort: i });
   }
   back(`/resources/${data.id}`, { ok: "Listed." });

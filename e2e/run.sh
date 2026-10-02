@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 mkdir -p e2e/out
 npx supabase db reset >/dev/null && npm run -s bootstrap-admin
 curl -s -X DELETE http://127.0.0.1:54324/api/v1/messages >/dev/null
-for t in family alerts resources mid weather-vault schedule misc; do
+for t in family alerts resources mid weather-vault schedule misc hardening; do
   echo "=== $t"
   node "e2e/$t.mjs"
 done

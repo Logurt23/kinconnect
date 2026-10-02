@@ -12,7 +12,7 @@ export async function addIcs(f: FormData) {
   const me = await requireMember();
   let url: string;
   try {
-    url = normalizeIcsUrl(str(f, "ics_url"));
+    url = await normalizeIcsUrl(str(f, "ics_url"));
   } catch (e) {
     back(P, { error: e instanceof Error && e.message !== "Invalid URL" ? e.message : "That doesn't look like a calendar link." });
   }

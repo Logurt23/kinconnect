@@ -22,4 +22,6 @@ if (existing) {
 await db.from("invites").upsert({ email, display_name: name || email.split("@")[0], role: "admin", circle_ids: [core.id] });
 const { error: createError } = await db.auth.admin.createUser({ email, password, email_confirm: true });
 if (createError) throw createError;
+// The admin has a password already, so there is no invite left to accept.
+await db.from("invites").delete().eq("email", email);
 console.log(`Created admin ${email}. Sign in at ${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/login`);

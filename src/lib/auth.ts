@@ -26,14 +26,16 @@ export const requireMember = cache(async (): Promise<Member> => {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle();
+  // Profile and circles in one round trip.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*, circle_members(circles(id, name, kind, color))")
+    .eq("id", auth.user.id)
+    .maybeSingle();
   if (!profile || !profile.active) redirect("/login?error=inactive");
-  const { data: rows } = await supabase
-    .from("circle_members")
-    .select("circles(id, name, kind, color)")
-    .eq("user_id", auth.user.id);
-  const circles = (rows ?? []).map((r) => r.circles as unknown as Circle).filter(Boolean);
-  return { ...(profile as Omit<Member, "circles">), circles };
+  const { circle_members: rows, ...rest } = profile as Omit<Member, "circles"> & { circle_members: { circles: Circle | null }[] };
+  const circles = (rows ?? []).map((r) => r.circles).filter((c): c is Circle => Boolean(c));
+  return { ...rest, circles };
 });
 
 export async function requireAdmin(): Promise<Member> {

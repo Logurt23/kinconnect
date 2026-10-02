@@ -3,24 +3,25 @@
 import { randomUUID } from "node:crypto";
 import { requireMember } from "@/lib/auth";
 import { back, str } from "@/lib/actions";
-import { MAX_UPLOAD, safeName } from "@/lib/storage";
+import { IMAGE_TYPES, MAX_UPLOAD, safeName, sniffType } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 
 const P = "/vault";
-const OK_TYPES = /^(image\/(png|jpeg|gif|webp|heic|heif)|application\/pdf)$/;
+const OK_TYPES = [...IMAGE_TYPES, "application/pdf"];
 
 export async function upload(f: FormData) {
   const me = await requireMember();
   const file = f.get("file");
   if (!(file instanceof File) || file.size === 0) back(P, { error: "Choose a file." });
-  if (!OK_TYPES.test(file.type)) back(P, { error: "Upload an image or a PDF." });
   if (file.size > MAX_UPLOAD) back(P, { error: "Files must be under 20 MB." });
+  const type = await sniffType(file);
+  if (!type || !OK_TYPES.includes(type)) back(P, { error: "Upload an image or a PDF." });
   const supabase = await createClient();
   const path = `${me.id}/${randomUUID()}-${safeName(file.name)}`;
-  const up = await supabase.storage.from("vault").upload(path, file, { contentType: file.type });
+  const up = await supabase.storage.from("vault").upload(path, file, { contentType: type });
   if (up.error) back(P, { error: up.error.message });
   const { error } = await supabase.from("vault_items").insert({
-    owner_id: me.id, title: str(f, "title") || file.name, path, mime: file.type, size_bytes: file.size,
+    owner_id: me.id, title: str(f, "title") || file.name, path, mime: type, size_bytes: file.size,
   });
   if (error) {
     await supabase.storage.from("vault").remove([path]);

@@ -23,7 +23,7 @@ create type ledger_status as enum ('open', 'paid', 'canceled');
 -- ---------- people and circles ----------
 create table profiles (
   id uuid primary key references auth.users on delete cascade,
-  email text not null,
+  email text not null unique,
   display_name text not null,
   photo_path text,
   birthday date,
@@ -57,6 +57,7 @@ create table invites (
   role member_role not null default 'member',
   circle_ids uuid[] not null default '{}',
   invited_by uuid references profiles,
+  user_id uuid, -- the pending auth user, so a cancel can remove it directly
   created_at timestamptz not null default now()
 );
 
@@ -86,7 +87,8 @@ begin
   if inv.email is not null then
     insert into circle_members (circle_id, user_id)
     select unnest(inv.circle_ids), new.id on conflict do nothing;
-    delete from invites where email = inv.email;
+    -- The invite stays listed as pending (and cancelable) until the link is used; /auth/confirm clears it.
+    update invites set user_id = new.id where email = inv.email;
   end if;
   return new;
 end $$;
@@ -247,7 +249,26 @@ create policy "see reservations" on reservations for select
 create policy "reserve" on reservations for insert
   with check (requester_id = auth.uid() and can_see_listing(listing_id) and not owns_listing(listing_id));
 create policy "owner decides, requester cancels" on reservations for update
-  using (owns_listing(listing_id) or requester_id = auth.uid());
+  using (owns_listing(listing_id) or requester_id = auth.uid())
+  with check (owns_listing(listing_id) or requester_id = auth.uid());
+
+-- RLS can't tell which columns changed, so a trigger holds the line: the requester may only cancel
+-- a pending or confirmed reservation; confirming, declining and returning belong to the owner.
+create function guard_reservation_update() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.listing_id <> old.listing_id or new.requester_id <> old.requester_id then
+    raise exception 'A reservation can''t be moved to another listing or person.';
+  end if;
+  if auth.uid() is not null and not owns_listing(old.listing_id) then
+    if new.status <> 'canceled' or old.status not in ('pending', 'confirmed')
+       or new.starts_on <> old.starts_on or new.ends_on is distinct from old.ends_on then
+      raise exception 'Only the owner can change that reservation.';
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger reservations_guard before update on reservations
+  for each row execute function guard_reservation_update();
 
 -- ---------- service requests ----------
 create table service_requests (
@@ -514,8 +535,11 @@ create policy "grantee sees share" on vault_shares for select
   using (user_id = auth.uid() or circle_id = any (my_circle_ids()));
 
 -- ---------- storage ----------
-insert into storage.buckets (id, name, public) values
-  ('vault', 'vault', false), ('listing-photos', 'listing-photos', false), ('avatars', 'avatars', false)
+-- Size and type limits are enforced here as well as in the server actions.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
+  ('vault', 'vault', false, 20971520, array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']),
+  ('listing-photos', 'listing-photos', false, 20971520, array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif']),
+  ('avatars', 'avatars', false, 20971520, array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif'])
 on conflict (id) do nothing;
 
 create function can_read_object(bucket text, object_name text) returns boolean
@@ -550,3 +574,12 @@ insert into categories (scope, name, sort) select 'resource', n, i from unnest(a
 insert into categories (scope, name, sort) select 'request', n, i from unnest(array[
   'Dog watching', 'Cat sitting', 'A ride', 'Airport pickup', 'Babysitting', 'A tool', 'A meal', 'Other'])
   with ordinality as t(n, i);
+
+-- ---------- counts ----------
+-- Alerts from someone else, in the last 60 days, that I haven't opened. RLS limits it to my circles.
+create function unread_alert_count() returns integer language sql stable security invoker set search_path = public as $$
+  select count(*)::int from alerts a
+  where a.sender_id <> auth.uid() and a.opened_at > now() - interval '60 days'
+    and not exists (select 1 from alert_receipts r where r.alert_id = a.id and r.user_id = auth.uid())
+$$;
+grant execute on function unread_alert_count() to authenticated;

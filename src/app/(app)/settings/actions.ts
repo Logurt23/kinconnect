@@ -2,7 +2,7 @@
 
 import { requireMember } from "@/lib/auth";
 import { back, optStr, str } from "@/lib/actions";
-import { MAX_UPLOAD, safeName } from "@/lib/storage";
+import { IMAGE_TYPES, MAX_UPLOAD, safeName, sniffType } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 
 const P = "/settings";
@@ -20,9 +20,10 @@ export async function saveProfile(f: FormData) {
   };
   const photo = f.get("photo");
   if (photo instanceof File && photo.size > 0) {
-    if (!photo.type.startsWith("image/") || photo.size > MAX_UPLOAD) back(P, { error: "Photos must be images under 20 MB." });
+    const type = photo.size <= MAX_UPLOAD ? await sniffType(photo) : null;
+    if (!type || !IMAGE_TYPES.includes(type)) back(P, { error: "Photos must be images under 20 MB." });
     const path = `${me.id}/${Date.now()}-${safeName(photo.name)}`;
-    const up = await supabase.storage.from("avatars").upload(path, photo, { contentType: photo.type });
+    const up = await supabase.storage.from("avatars").upload(path, photo, { contentType: type });
     if (up.error) back(P, { error: up.error.message });
     if (me.photo_path) await supabase.storage.from("avatars").remove([me.photo_path]);
     update.photo_path = path;

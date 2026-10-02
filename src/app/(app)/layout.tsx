@@ -7,7 +7,7 @@ import { signedUrls } from "@/lib/storage";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember();
   const [unread, photos] = await Promise.all([
-    unreadAlertCount(me.id),
+    unreadAlertCount(),
     me.photo_path ? signedUrls("avatars", [me.photo_path], 3600) : Promise.resolve(new Map<string, string>()),
   ]);
   const nav = { name: me.display_name, photo: me.photo_path ? photos.get(me.photo_path) ?? null : null, circles: me.circles, unread };

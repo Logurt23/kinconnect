@@ -24,10 +24,13 @@ export async function sendAlert(f: FormData) {
   back(`/alerts/${data.id}`, { ok: kind === "notice" ? "Notice sent." : "Emergency sent. It stays pinned on everyone's Home until it's closed." });
 }
 
+const UPDATE_KINDS = ["note", "on_scene", "heading_over", "resolved", "power_out", "hurt", "safe", "need_contact"] as const;
+
 export async function postUpdate(f: FormData) {
   const me = await requireMember();
   const id = str(f, "alert_id");
-  const kind = str(f, "kind") || "note";
+  const kind = UPDATE_KINDS.find((k) => k === (str(f, "kind") || "note"));
+  if (!kind) back(`/alerts/${id}`, { error: "Pick an update." });
   const supabase = await createClient();
   const { error } = await supabase.from("alert_updates").insert({ alert_id: id, author_id: me.id, kind, body: optStr(f, "body") });
   if (error) back(`/alerts/${id}`, { error: error.message });

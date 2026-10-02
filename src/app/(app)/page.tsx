@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { AlertTriangle, CloudLightning, Home as HomeIcon, Siren } from "lucide-react";
 import { Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { requireMember } from "@/lib/auth";
 import { ALERT_LABEL } from "@/lib/alerts-labels";
 import { ago, dateLabel, dateTimeLabel, money, nextBirthday } from "@/lib/format";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { checkWeatherFor } from "@/lib/weather";
 
@@ -12,7 +14,10 @@ export const metadata = { title: "Home" };
 export default async function HomePage() {
   const me = await requireMember();
   const supabase = await createClient();
-  await checkWeatherFor(me); // a located member gets their NWS prompt even without the cron
+  // A located member gets their NWS prompt even without the cron. The check runs after the response,
+  // so Home never waits on weather.gov; a new prompt shows on the next visit (the cron covers the rest).
+  // Request APIs aren't available inside after(), so it writes this member's prompts with the service key.
+  after(() => checkWeatherFor(me, createAdminClient()));
 
   const now = new Date();
   const week = new Date(now.getTime() + 7 * 86400000);

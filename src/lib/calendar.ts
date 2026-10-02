@@ -2,6 +2,7 @@ import "server-only";
 import ICAL from "ical.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { decrypt } from "@/lib/crypto";
+import { assertPublicUrl, fetchPublicText } from "@/lib/net";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly";
@@ -23,10 +24,9 @@ const WINDOW_BACK = 30 * 86400000;
 const WINDOW_AHEAD = 120 * 86400000;
 
 /** Apple and others: a pasted subscribe link. webcal:// is the same feed over https. */
-export function normalizeIcsUrl(raw: string) {
+export async function normalizeIcsUrl(raw: string) {
   const url = new URL(raw.trim().replace(/^webcal:\/\//i, "https://"));
-  if (url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && url.protocol === "http:")) throw new Error("Use the https or webcal link from your calendar app.");
-  if (process.env.NODE_ENV === "production" && /^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[::1\])/.test(url.hostname)) throw new Error("That link points inside a private network.");
+  await assertPublicUrl(url);
   return url.toString();
 }
 
@@ -60,6 +60,7 @@ async function googleAccessToken(userId: string) {
   if (!data) throw new Error("Google isn't connected.");
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
+    signal: AbortSignal.timeout(10000),
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID!, client_secret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -78,7 +79,7 @@ async function googleEvents(userId: string, calendarId: string, from: Date, to: 
   do {
     const q = new URLSearchParams({ timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: "true", orderBy: "startTime", maxResults: "250" });
     if (page) q.set("pageToken", page);
-    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${q}`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${q}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error?.message || "Google Calendar didn't answer.");
     for (const e of body.items ?? []) {
@@ -103,9 +104,8 @@ export async function syncSource(db: SupabaseClient, s: Source) {
   try {
     let events: Ev[];
     if (s.kind === "ics") {
-      const res = await fetch(normalizeIcsUrl(s.ics_url!), { signal: AbortSignal.timeout(15000), headers: { "User-Agent": "KinConnect calendar" } });
-      if (!res.ok) throw new Error(`The subscribe link answered ${res.status}.`);
-      events = parseIcs(await res.text(), from, to);
+      const text = await fetchPublicText(await normalizeIcsUrl(s.ics_url!), { headers: { "User-Agent": "KinConnect calendar" } });
+      events = parseIcs(text, from, to);
     } else {
       events = await googleEvents(s.owner_id, s.google_calendar_id || "primary", from, to);
     }

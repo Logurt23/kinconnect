@@ -48,7 +48,7 @@ export async function recordPrompts(db: SupabaseClient, userId: string, lat: num
 }
 
 /** Called on Home and Weather so a located member is prompted even if the cron hasn't run. */
-export async function checkWeatherFor(me: Member) {
+export async function checkWeatherFor(me: Member, db?: SupabaseClient) {
   if (me.lat == null || me.lon == null) return null;
-  return recordPrompts(await createClient(), me.id, me.lat, me.lon);
+  return recordPrompts(db ?? (await createClient()), me.id, me.lat, me.lon);
 }

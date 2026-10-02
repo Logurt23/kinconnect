@@ -27,6 +27,22 @@ for (const e of ["ava@kinconnect.local", "uncle@kinconnect.local"]) {
   const p = await signIn(b, e, "family-pass-1");
   console.log("signed in", e, await p.locator("aside").first().innerText().then((t) => t.split("\n").slice(-2).join(" | ")));
 }
+// A pending invite is listed until it's used, and canceling it kills the emailed link.
+await admin.goto(base + "/family");
+await admin.fill("#email", "cancelme@kinconnect.local");
+await admin.click("text=Send invite");
+await admin.waitForURL(/ok=Invite/);
+const pendingLink = await inviteLink("cancelme@kinconnect.local");
+console.log("pending listed", await admin.locator("li:has-text('cancelme@kinconnect.local') >> button:text-is('Cancel')").count() === 1);
+console.log("accepted not listed", await admin.locator("li:has-text('ava@kinconnect.local') >> button:text-is('Cancel')").count() === 0);
+admin.once("dialog", (d) => d.accept());
+await admin.click("li:has-text('cancelme@kinconnect.local') >> button:text-is('Cancel')");
+await admin.waitForURL(/ok=Invite/);
+console.log("cancel", await flash(admin));
+const ctxC = await b.newContext(); const pc = await ctxC.newPage();
+await pc.goto(pendingLink);
+console.log("canceled link refused", /auth\/error/.test(pc.url()));
+await ctxC.close();
 await admin.goto(base + "/family");
 await admin.screenshot({ path: "e2e/out/family.png", fullPage: true });
 await b.close();

@@ -33,11 +33,12 @@ export async function cancelInvite(f: FormData) {
   await requireAdmin();
   const db = createAdminClient();
   const email = str(f, "email");
-  await db.from("invites").delete().eq("email", email);
+  const { data: invite } = await db.from("invites").delete().eq("email", email).select("user_id").maybeSingle();
   // Remove the unconfirmed auth user too, so the link in their inbox stops working.
-  const { data } = await db.auth.admin.listUsers({ perPage: 1000 });
-  const pending = data?.users.find((u) => u.email === email && !u.last_sign_in_at);
-  if (pending) await db.auth.admin.deleteUser(pending.id);
+  if (invite?.user_id) {
+    const { data } = await db.auth.admin.getUserById(invite.user_id);
+    if (data.user && !data.user.last_sign_in_at) await db.auth.admin.deleteUser(invite.user_id);
+  }
   back(P, { ok: "Invite canceled." });
 }
 
@@ -47,10 +48,11 @@ export async function updateMember(f: FormData) {
   const role = str(f, "role") === "admin" ? "admin" : "member";
   const circles = ids(f);
   if (id === me.id && role !== "admin") back(P, { error: "You can't remove your own admin role." });
+  if (circles.length === 0) back(P, { error: "Keep at least one circle, or they won't see anything." });
   const db = createAdminClient();
   await db.from("profiles").update({ role }).eq("id", id);
   await db.from("circle_members").delete().eq("user_id", id);
-  if (circles.length) await db.from("circle_members").insert(circles.map((c) => ({ circle_id: c, user_id: id })));
+  await db.from("circle_members").insert(circles.map((c) => ({ circle_id: c, user_id: id })));
   back(P, { ok: "Saved." });
 }
 

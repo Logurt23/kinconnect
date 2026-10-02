@@ -27,6 +27,7 @@ Invite and password-reset emails go to Mailpit at http://127.0.0.1:54324 locally
 2. In Supabase Auth settings: turn off "Allow new users to sign up", keep the Email provider on, set the
    Site URL to the deployed URL, and paste `supabase/templates/invite.html` and `recovery.html` into the
    Invite and Reset Password email templates. Add custom SMTP before inviting more than a few people.
+   Under Rate Limits, lower the sign-in/OTP and email limits (KinConnect has no rate limiter of its own).
 3. Set the env vars from `.env.example` on the host (Vercel works; `vercel.json` schedules the weather and
    calendar sweeps, which authenticate with `CRON_SECRET`).
 4. Google Calendar (optional): create an OAuth client (Web application) in Google Cloud with the
@@ -44,6 +45,10 @@ Invite and password-reset emails go to Mailpit at http://127.0.0.1:54324 locally
 - Vault files live in a private bucket; links are signed for 60 seconds at the moment of the click.
 - Google refresh tokens are AES-256-GCM encrypted and only readable with the service key.
 - The 911 button tells the family. It never contacts 911, and says so.
+- A requester can only cancel their own reservation; confirming, declining and returning are the owner's (a trigger enforces it).
+- Uploads are typed by their first bytes, not the browser's claim, and the buckets only accept images (and PDFs in the vault).
+- Calendar subscribe links are fetched only from public addresses, re-checked on every redirect, capped at 5 MB.
+- Every response carries a Content-Security-Policy, HSTS, and no-framing headers (`next.config.ts`).
 
 ## Tests
 
