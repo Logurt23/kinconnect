@@ -1,7 +1,7 @@
 import { browser, signIn, inviteLink, flash, base } from "./lib.mjs";
 const b = await browser();
-const admin = await signIn(b, "admin@kinroot.local", "kinroot-admin-1");
-for (const [email, name, extended] of [["ava@kinroot.local", "Ava", false], ["uncle@kinroot.local", "Uncle Ray", true]]) {
+const admin = await signIn(b, "admin@kinconnect.local", "kinconnect-admin-1");
+for (const [email, name, extended] of [["ava@kinconnect.local", "Ava", false], ["uncle@kinconnect.local", "Uncle Ray", true]]) {
   await admin.goto(base + "/family");
   await admin.fill("#email", email);
   await admin.fill("#display_name", name);
@@ -23,7 +23,7 @@ for (const [email, name, extended] of [["ava@kinroot.local", "Ava", false], ["un
   console.log("accepted", email, await p.locator("h1").textContent());
   await ctx.close();
 }
-for (const e of ["ava@kinroot.local", "uncle@kinroot.local"]) {
+for (const e of ["ava@kinconnect.local", "uncle@kinconnect.local"]) {
   const p = await signIn(b, e, "family-pass-1");
   console.log("signed in", e, await p.locator("aside").first().innerText().then((t) => t.split("\n").slice(-2).join(" | ")));
 }

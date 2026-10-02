@@ -21,7 +21,7 @@ export default async function ListsPage({ searchParams }: { searchParams: Search
   const Row = ({ l }: { l: (typeof mine)[number] }) => (
     <li><Link href={`/lists/${l.id}`} className="flex flex-wrap items-center gap-2 py-2 hover:underline">
       <b>{l.title}</b><span className="pill bg-canvas capitalize">{l.kind}</span>
-      <span className="text-xs text-muted">{(l.owner as unknown as { display_name: string }).display_name} · {(l.items as unknown as { count: number }[])[0]?.count ?? 0} items</span>
+      <span className="text-xs text-muted">{(l.owner as unknown as { display_name: string }).display_name} · {((n) => `${n} item${n === 1 ? "" : "s"}`)((l.items as unknown as { count: number }[])[0]?.count ?? 0)}</span>
       <CircleBadges ids={l.circle_ids} circles={circles} />
     </Link></li>
   );
@@ -29,7 +29,7 @@ export default async function ListsPage({ searchParams }: { searchParams: Search
     <div className="space-y-5">
       <PageHeader icon={Gift} title="Lists" subtitle="Christmas, birthday and other gift lists. Claims stay hidden from the list owner." />
       <Flash searchParams={searchParams} />
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Section title="Family lists">{family.length ? <ul className="divide-y divide-line">{family.map((l) => <Row key={l.id} l={l} />)}</ul> : <Empty>No one has shared a list with your circles yet.</Empty>}</Section>
         <Section title="My lists">
           {mine.length ? <ul className="mb-4 divide-y divide-line">{mine.map((l) => <Row key={l.id} l={l} />)}</ul> : <Empty>You don&apos;t have a list yet.</Empty>}

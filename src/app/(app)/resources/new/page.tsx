@@ -19,14 +19,14 @@ export default async function NewListing({ searchParams }: { searchParams: Searc
       <PageHeader icon={Boxes} title="New listing"><Link href="/resources" className="btn-secondary">Back</Link></PageHeader>
       <Flash searchParams={searchParams} />
       <Section title="What are you offering?">
-        <form action={createListing} className="grid gap-3 sm:grid-cols-2">
+        <form action={createListing} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2"><label className="label" htmlFor="title">Title</label><input className="input" id="title" name="title" required /></div>
           <div><label className="label" htmlFor="category_id">Category</label>
             <select className="input" id="category_id" name="category_id">{(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <div><label className="label" htmlFor="quantity">Quantity</label><input className="input" id="quantity" name="quantity" type="number" min={1} defaultValue={1} /></div>
           <fieldset className="sm:col-span-2">
             <legend className="label">Offer</legend>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <label className="card flex flex-col gap-1 p-3 has-[:checked]:border-brand has-[:checked]:bg-brand/5">
                 <span className="flex items-center gap-2 text-sm font-semibold"><input type="radio" name="offer_type" value="loan" defaultChecked className="accent-brand" /> Loan it</span>
                 <span className="flex items-center gap-1 text-xs text-muted">for <input name="loan_days" type="number" min={1} defaultValue={60} className="input w-20 py-1" aria-label="Loan days" /> days</span>

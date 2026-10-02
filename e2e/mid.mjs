@@ -1,8 +1,8 @@
 import { browser, signIn, flash, base } from "./lib.mjs";
 const b = await browser();
-const admin = await signIn(b, "admin@kinroot.local", "kinroot-admin-1");
-const ava = await signIn(b, "ava@kinroot.local", "family-pass-1");
-const uncle = await signIn(b, "uncle@kinroot.local", "family-pass-1");
+const admin = await signIn(b, "admin@kinconnect.local", "kinconnect-admin-1");
+const ava = await signIn(b, "ava@kinconnect.local", "family-pass-1");
+const uncle = await signIn(b, "uncle@kinconnect.local", "family-pass-1");
 const d = (n) => { const x = new Date(Date.now() + n * 86400000); return `1990-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
 // Settings: birthdays (Ava in 10 days, uncle today), home base for admin (Tulsa)
 await ava.goto(base + "/settings"); await ava.fill("#birthday", d(10)); await ava.click("text=Save profile"); await ava.waitForLoadState("networkidle"); console.log("ava settings:", await flash(ava));

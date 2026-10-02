@@ -16,6 +16,6 @@ export async function GET() {
     scope: GOOGLE_SCOPE, access_type: "offline", prompt: "consent", include_granted_scopes: "true", state,
   });
   const res = NextResponse.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${q}`);
-  res.cookies.set("kr_google_state", state, { httpOnly: true, secure: site.startsWith("https"), sameSite: "lax", maxAge: 600, path: "/api/google" });
+  res.cookies.set("kc_google_state", state, { httpOnly: true, secure: site.startsWith("https"), sameSite: "lax", maxAge: 600, path: "/api/google" });
   return res;
 }

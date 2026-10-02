@@ -1,8 +1,8 @@
 import { browser, signIn, flash, base } from "./lib.mjs";
 const b = await browser();
-const admin = await signIn(b, "admin@kinroot.local", "kinroot-admin-1");
-const ava = await signIn(b, "ava@kinroot.local", "family-pass-1");
-const uncle = await signIn(b, "uncle@kinroot.local", "family-pass-1");
+const admin = await signIn(b, "admin@kinconnect.local", "kinconnect-admin-1");
+const ava = await signIn(b, "ava@kinconnect.local", "family-pass-1");
+const uncle = await signIn(b, "uncle@kinconnect.local", "family-pass-1");
 console.log("admin home prompt:", await admin.locator("main a:has-text('covers your home base')").allInnerTexts());
 await admin.goto(base + "/weather"); console.log("weather alerts:", await admin.locator("section:has-text('Your home base') li").allInnerTexts());
 await ava.goto(base + "/weather"); console.log("ava (no location):", await ava.locator("section:has-text('Your home base') p").first().innerText());

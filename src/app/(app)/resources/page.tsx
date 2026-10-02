@@ -36,25 +36,25 @@ export default async function ResourcesPage({ searchParams }: { searchParams: Se
         <Link href="/resources/new" className="btn-primary"><Plus size={16} /> New listing</Link>
       </PageHeader>
       <Flash searchParams={searchParams} />
-      <form className="flex flex-wrap gap-2">
-        <select name="view" defaultValue={view} className="input w-auto"><option value="open">Open listings</option><option value="mine">My listings</option><option value="all">Everything</option></select>
-        <select name="category" defaultValue={cat} className="input w-auto"><option value="">All categories</option>{(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-        <select name="offer" defaultValue={offer} className="input w-auto"><option value="">Any offer</option><option value="loan">Loan</option><option value="sell">For sale</option><option value="give">Giving away</option></select>
+      <form className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <select name="view" defaultValue={view} className="input sm:w-auto" aria-label="Show"><option value="open">Open listings</option><option value="mine">My listings</option><option value="all">Everything</option></select>
+        <select name="category" defaultValue={cat} className="input sm:w-auto" aria-label="Category"><option value="">All categories</option>{(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+        <select name="offer" defaultValue={offer} className="input sm:w-auto" aria-label="Offer"><option value="">Any offer</option><option value="loan">Loan</option><option value="sell">For sale</option><option value="give">Giving away</option></select>
         <button className="btn-secondary">Filter</button>
       </form>
       {!listings?.length ? <div className="card p-6"><Empty>No listings match. List something your family could use.</Empty></div> : (
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-4">
           {listings.map((l) => {
             const cover = [...(l.photos ?? [])].sort((a, b) => a.sort - b.sort)[0]?.path;
             return (
               <li key={l.id}>
                 <Link href={`/resources/${l.id}`} className="card block overflow-hidden hover:border-brand">
-                  <div className="flex aspect-[4/3] items-center justify-center bg-canvas text-muted">
+                  <div className="flex aspect-square items-center justify-center bg-brand-soft text-brand/40 sm:aspect-[4/3]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {cover && urls.get(cover) ? <img src={urls.get(cover)} alt="" className="h-full w-full object-cover" /> : <Boxes size={28} />}
+                    {cover && urls.get(cover) ? <img src={urls.get(cover)} alt="" className="h-full w-full object-cover" /> : <Boxes size={30} />}
                   </div>
                   <div className="space-y-1 p-3">
-                    <div className="flex items-start justify-between gap-2"><b className="text-sm">{l.title}</b><StatusPill status={l.status} /></div>
+                    <b className="block truncate text-sm">{l.title}</b><StatusPill status={l.status} />
                     <p className="text-xs text-muted">{offerLabel(l)} · {(l.category as unknown as { name: string } | null)?.name ?? "Other"}{l.quantity > 1 ? ` · ${l.quantity} available` : ""}</p>
                     <p className="flex flex-wrap items-center gap-1 text-xs text-muted">{(l.owner as unknown as { display_name: string }).display_name} · <CircleBadges ids={l.circle_ids} circles={circles} /></p>
                   </div>

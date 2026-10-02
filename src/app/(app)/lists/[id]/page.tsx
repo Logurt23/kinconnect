@@ -50,7 +50,7 @@ export default async function ListPage({ params, searchParams }: { params: Promi
                     <input type="hidden" name="list_id" value={id} /><input type="hidden" name={mine ? "id" : "item_id"} value={i.id} />
                     {mine ? <ConfirmSubmit className="btn-small" confirm="Remove this item?">Remove</ConfirmSubmit>
                       : c ? (c.claimed_by === me.id
-                        ? <><span className="pill bg-green-50 text-brand">You claimed this</span><input type="hidden" name="claim" value="0" /><ConfirmSubmit className="btn-small">Unclaim</ConfirmSubmit></>
+                        ? <><span className="pill bg-brand-soft text-brand-dark">You claimed this</span><input type="hidden" name="claim" value="0" /><ConfirmSubmit className="btn-small">Unclaim</ConfirmSubmit></>
                         : <span className="pill bg-amber-50 text-warn">Claimed by {(c.claimer as unknown as { display_name: string }).display_name}</span>)
                       : <><input type="hidden" name="claim" value="1" /><ConfirmSubmit className="btn-primary py-1">Claim</ConfirmSubmit></>}
                   </form>
@@ -62,7 +62,7 @@ export default async function ListPage({ params, searchParams }: { params: Promi
       </Section>
       {mine && (
         <Section title="Add an item">
-          <form action={addItem} className="grid gap-2 sm:grid-cols-2">
+          <form action={addItem} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input type="hidden" name="list_id" value={id} />
             <input className="input sm:col-span-2" name="url" type="url" placeholder="Paste a link (Amazon or anywhere)" aria-label="Link" />
             <input className="input" name="title" placeholder="Title (optional with a link)" aria-label="Title" />

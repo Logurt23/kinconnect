@@ -37,12 +37,12 @@ export default async function ListingPage({ params, searchParams }: { params: Pr
         <Link href="/resources" className="btn-secondary">All resources</Link>
       </PageHeader>
       <Flash searchParams={searchParams} />
-      <div className="grid gap-5 md:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1.2fr_1fr]">
         <div className="card space-y-3 p-4">
           {photos.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {photos.map((p) => urls.get(p) && <img key={p} src={urls.get(p)} alt="" className="aspect-[4/3] w-full rounded-lg object-cover" />)}
+              {photos.map((p) => urls.get(p) && <img key={p} src={urls.get(p)} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" />)}
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2"><StatusPill status={l.status} /><CircleBadges ids={l.circle_ids} circles={circles} />{l.quantity > 1 && <span className="text-xs text-muted">{l.quantity} available</span>}</div>

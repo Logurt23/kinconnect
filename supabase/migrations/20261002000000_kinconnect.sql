@@ -1,4 +1,4 @@
--- Kinroot schema. Every table has row level security. Shared rows carry circle_ids and are visible
+-- KinConnect schema. Every table has row level security. Shared rows carry circle_ids and are visible
 -- to members whose circles overlap; see my_circle_ids().
 
 create extension if not exists pgcrypto;

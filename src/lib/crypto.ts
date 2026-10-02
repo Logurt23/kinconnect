@@ -1,7 +1,7 @@
 import "server-only";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-// AES-256-GCM for the one secret Kinroot keeps: Google refresh tokens. Format: iv.tag.ciphertext (base64).
+// AES-256-GCM for the one secret KinConnect keeps: Google refresh tokens. Format: iv.tag.ciphertext (base64).
 function key() {
   const k = Buffer.from(process.env.TOKEN_ENCRYPTION_KEY ?? "", "base64");
   if (k.length !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be 32 bytes, base64");

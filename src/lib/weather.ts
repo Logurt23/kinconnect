@@ -16,7 +16,7 @@ export async function alertsAt(lat: number, lon: number): Promise<NwsAlert[] | n
   if (hit && Date.now() - hit.at < TTL) return hit.alerts;
   try {
     const res = await fetch(`${BASE}/alerts/active?point=${key}`, {
-      headers: { "User-Agent": process.env.NWS_USER_AGENT || "Kinroot family app", Accept: "application/geo+json" },
+      headers: { "User-Agent": process.env.NWS_USER_AGENT || "KinConnect family app", Accept: "application/geo+json" },
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });

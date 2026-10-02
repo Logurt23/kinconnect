@@ -18,11 +18,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
       <PageHeader icon={Settings} title="Settings" subtitle={me.email} />
       <Flash searchParams={searchParams} />
       <Section title="Profile">
-        <form action={saveProfile} className="grid gap-3 sm:grid-cols-2">
+        <form action={saveProfile} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex items-center gap-3 sm:col-span-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {photo ? <img src={photo} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-lg font-bold text-white">{initials(me.display_name)}</span>}
-            <div><label className="label" htmlFor="photo">Photo</label><input id="photo" name="photo" type="file" accept="image/*" className="text-sm" /></div>
+            <div className="min-w-0 flex-1"><label className="label" htmlFor="photo">Photo</label><input id="photo" name="photo" type="file" accept="image/*" className="w-full text-sm" /></div>
           </div>
           <div><label className="label" htmlFor="display_name">Display name</label><input className="input" id="display_name" name="display_name" defaultValue={me.display_name} required /></div>
           <div><label className="label" htmlFor="birthday">Birthday</label><input className="input" id="birthday" name="birthday" type="date" defaultValue={me.birthday ?? ""} /></div>
@@ -39,7 +39,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
         </form>
       </Section>
       <Section title="Password">
-        <form action={changePassword} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <form action={changePassword} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <div><label className="label" htmlFor="password">New password</label><input className="input" id="password" name="password" type="password" minLength={8} autoComplete="new-password" required /></div>
           <div><label className="label" htmlFor="confirm">Confirm</label><input className="input" id="confirm" name="confirm" type="password" minLength={8} autoComplete="new-password" required /></div>
           <ConfirmSubmit className="btn-secondary" pending="Saving...">Change password</ConfirmSubmit>

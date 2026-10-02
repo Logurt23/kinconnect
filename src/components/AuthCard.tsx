@@ -1,18 +1,21 @@
-import { Wordmark } from "./Wordmark";
+import { Mark } from "./Wordmark";
 
-/** The centered sign-in card from the Four States portal, in Kinroot colours. */
+/** Sign-in and password screens: full width on phones, a centered card from tablet up. */
 export function AuthCard({ subtitle, children }: { subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-rail px-4">
-      <div className="pointer-events-none absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-core/30 blur-3xl" />
-      <div className="pointer-events-none absolute -right-40 -bottom-40 h-[28rem] w-[28rem] rounded-full bg-extended/25 blur-3xl" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:22px_22px]" />
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl shadow-black/50">
-        <Wordmark size="lg" />
-        <p className="mt-5 text-sm text-muted">{subtitle}</p>
-        {children}
+    <div className="flex min-h-dvh flex-col bg-canvas sm:items-center sm:justify-center sm:px-4 sm:py-10">
+      <div className="relative h-44 overflow-hidden bg-brand sm:hidden">
+        <div className="absolute -top-10 -right-8 h-40 w-40 rounded-full bg-white/10" />
+        <div className="absolute top-16 -left-10 h-32 w-32 rounded-full bg-[#c4b5fd]/30" />
+        <div className="absolute right-16 bottom-6 h-10 w-10 rounded-full bg-[#fde68a]/60" />
       </div>
-      <p className="absolute bottom-5 text-xs text-white/40">Kinroot · private family app · invite only</p>
+      <div className="relative -mt-16 flex-1 rounded-t-[28px] bg-canvas px-6 pt-7 pb-10 sm:mt-0 sm:w-full sm:max-w-[400px] sm:flex-none sm:rounded-3xl sm:bg-white sm:p-9 sm:shadow-soft">
+        <Mark size={52} />
+        <h1 className="mt-5 text-[28px] leading-tight font-extrabold tracking-tight">Kin<span className="text-brand">Connect</span></h1>
+        <p className="mt-1 text-[15px] text-muted">{subtitle}</p>
+        {children}
+        <p className="mt-10 text-center text-xs text-muted/80">Private family app · invite only</p>
+      </div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ export default async function ForgotPassword({ searchParams }: { searchParams: P
   return (
     <AuthCard subtitle="We'll email you a link to choose a new password.">
       {sent ? (
-        <p className="mt-6 rounded-lg bg-green-50 px-3 py-2 text-sm font-semibold text-brand">
+        <p className="mt-6 rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand">
           If that email belongs to a family member, a reset link is on its way.
         </p>
       ) : (

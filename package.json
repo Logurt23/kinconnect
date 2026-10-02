@@ -1,5 +1,5 @@
 {
-  "name": "kinroot",
+  "name": "kinconnect",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,7 +13,7 @@
     "bootstrap-admin": "node --env-file-if-exists=.env.local scripts/bootstrap-admin.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "ical.js": "^2.2.1",

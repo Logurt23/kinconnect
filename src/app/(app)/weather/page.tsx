@@ -43,10 +43,10 @@ export default async function WeatherPage({ searchParams }: { searchParams: Sear
         </form>
       ))}
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Section title="Your home base">
           {me.lat == null ? (
-            <p className="text-sm">You haven&apos;t set a location, so Kinroot can&apos;t check weather for you. <Link href="/settings" className="font-semibold text-brand underline">Set your home base</Link>.</p>
+            <p className="text-sm">You haven&apos;t set a location, so KinConnect can&apos;t check weather for you. <Link href="/settings" className="font-semibold text-brand underline">Set your home base</Link>.</p>
           ) : alerts === null ? (
             <Empty>The National Weather Service didn&apos;t answer just now. Try again in a few minutes.</Empty>
           ) : (

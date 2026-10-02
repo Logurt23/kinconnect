@@ -37,9 +37,9 @@ export default async function LedgerPage({ searchParams }: { searchParams: Searc
 
   return (
     <div className="space-y-5">
-      <PageHeader icon={Wallet} title="Ledger" subtitle="Keep track of who owes whom. Kinroot never moves money." />
+      <PageHeader icon={Wallet} title="Ledger" subtitle="Keep track of who owes whom. KinConnect never moves money." />
       <Flash searchParams={searchParams} />
-      <div className="grid gap-5 xl:grid-cols-[1fr_1.4fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1.4fr]">
         <div className="space-y-5">
           <Section title="New entry">
             <form action={addEntry} className="space-y-3">
@@ -87,7 +87,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Searc
                       <div className="flex gap-1">
                         <form action={markPaid}>
                           <input type="hidden" name="id" value={e.id} /><input type="hidden" name="paid" value={myBox ? "0" : "1"} />
-                          <ConfirmSubmit className={myBox ? "btn-small bg-green-50 text-brand" : "btn-small"}>{myBox ? "☑ You marked paid" : "☐ Mark paid"}</ConfirmSubmit>
+                          <ConfirmSubmit className={myBox ? "btn-small bg-brand-soft text-brand-dark" : "btn-small"}>{myBox ? "☑ You marked paid" : "☐ Mark paid"}</ConfirmSubmit>
                         </form>
                         {e.status === "open" && e.created_by === me.id && (
                           <form action={cancelEntry}><input type="hidden" name="id" value={e.id} /><ConfirmSubmit className="btn-small" confirm="Cancel this entry?">Cancel</ConfirmSubmit></form>

@@ -55,7 +55,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
       <Flash searchParams={searchParams} />
 
       <section className="card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
           <div className="flex items-center gap-1">
             <Link className="btn-small" href={`?view=${view}&date=${ymd(prev)}`} aria-label="Previous"><ChevronLeft size={14} /></Link>
             <Link className="btn-small" href={`?view=${view}`}>Today</Link>
@@ -64,7 +64,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden flex-wrap gap-2 text-xs sm:flex">{people.map((p) => <span key={p.name} className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full" style={{ background: p.color }} />{p.name}</span>)}</span>
-            <span className="flex rounded-lg border border-line text-xs font-semibold">
+            <span className="flex rounded-full bg-canvas p-0.5 text-xs font-semibold">
               <Link href={`?view=week&date=${ymd(anchor)}`} className={`px-2.5 py-1 ${view === "week" ? "bg-ink text-white" : ""} rounded-l-lg`}>Week</Link>
               <Link href={`?view=month&date=${ymd(anchor)}`} className={`px-2.5 py-1 ${view === "month" ? "bg-ink text-white" : ""} rounded-r-lg`}>Month</Link>
             </span>
@@ -76,13 +76,17 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
             const items = on(d);
             const out = view === "month" && d.getMonth() !== anchor.getMonth();
             return (
-              <div key={ymd(d)} className={`min-h-24 border-r border-b border-line p-1.5 ${out ? "bg-canvas/60 text-muted" : ""} ${view === "week" ? "md:min-h-64" : ""}`}>
-                <div className={`mb-1 font-semibold ${ymd(d) === today ? "text-brand" : ""}`}>
+              <div key={ymd(d)} className={`border-line p-1.5 ${view === "week" ? "flex gap-3 border-b px-4 py-3 md:block md:min-h-64 md:border-r md:px-1.5 md:py-1.5" : "min-h-14 border-r border-b sm:min-h-24"} ${out ? "bg-canvas/60 text-muted" : ""}`}>
+                <div className={`mb-1 font-semibold ${view === "week" ? "w-24 shrink-0 md:w-auto" : ""} ${ymd(d) === today ? "text-brand" : ""}`}>
                   {view === "week" ? d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : d.getDate()}
                 </div>
-                <ul className="space-y-0.5">
+                {view === "week" && !items.length && <p className="text-muted/60 md:hidden">Free</p>}
+                {view === "month" && !!items.length && (
+                  <span className="flex flex-wrap gap-0.5 sm:hidden" aria-hidden>{items.slice(0, 6).map((e) => <span key={e.id} className="h-1.5 w-1.5 rounded-full" style={{ background: e.color }} />)}</span>
+                )}
+                <ul className={`min-w-0 flex-1 space-y-0.5 ${view === "month" ? "hidden sm:block" : ""}`}>
                   {items.slice(0, view === "month" ? 4 : 30).map((e) => (
-                    <li key={`${e.id}${ymd(d)}`} className="truncate rounded px-1 py-0.5 text-white" style={{ background: e.color }} title={`${e.owner_name}: ${e.title}`}>
+                    <li key={`${e.id}${ymd(d)}`} className="truncate rounded-md px-1.5 py-0.5 text-white" style={{ background: e.color }} title={`${e.owner_name}: ${e.title}`}>
                       {!e.all_day && <span className="opacity-80">{time(e.starts_at)} </span>}{e.owner_name.split(" ")[0]} · {e.title}
                     </li>
                   ))}
@@ -94,7 +98,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Section title="My calendars">
           {!(sources ?? []).length ? <Empty>No calendars yet. Connect Google, paste an Apple subscribe link, or add a manual block.</Empty> : (
             <ul className="divide-y divide-line">

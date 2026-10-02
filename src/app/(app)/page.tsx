@@ -72,7 +72,7 @@ export default async function HomePage() {
         );
       })}
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Section title="Unread alerts" action={<Link href="/alerts" className="text-xs font-semibold text-brand">All alerts</Link>}>
           {unread.length === 0 ? <Empty>You&apos;re caught up.</Empty> : (
             <ul className="divide-y divide-line">
@@ -113,10 +113,10 @@ export default async function HomePage() {
           {!events.data?.length ? <Empty>Nothing on the family calendar this week. Connect a calendar in Schedule.</Empty> : (
             <ul className="space-y-1.5 text-sm">
               {events.data.slice(0, 10).map((e: { id: string; color: string; title: string; owner_name: string; starts_at: string; all_day: boolean }) => (
-                <li key={e.id} className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: e.color }} />
-                  <span className="w-28 shrink-0 text-muted">{e.all_day ? dateLabel(e.starts_at, { weekday: "short", month: "short", day: "numeric" }) : dateTimeLabel(e.starts_at)}</span>
-                  <span className="truncate"><b>{e.owner_name}</b> · {e.title}</span>
+                <li key={e.id} className="flex items-start gap-2.5">
+                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: e.color }} />
+                  <span className="min-w-0 sm:flex sm:gap-2"><span className="block text-xs text-muted sm:w-32 sm:shrink-0 sm:text-sm">{e.all_day ? dateLabel(e.starts_at, { weekday: "short", month: "short", day: "numeric" }) : dateTimeLabel(e.starts_at)}</span>
+                  <span className="block truncate"><b>{e.owner_name}</b> · {e.title}</span></span>
                 </li>
               ))}
             </ul>
@@ -138,10 +138,10 @@ export default async function HomePage() {
 
       <Section title="Open listings in your circles" action={<Link href="/resources" className="text-xs font-semibold text-brand">Resources</Link>}>
         {!listings.data?.length ? <Empty>No open listings yet.</Empty> : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {listings.data.map((l) => (
               <li key={l.id}>
-                <Link href={`/resources/${l.id}`} className="block rounded-lg border border-line p-3 hover:border-brand">
+                <Link href={`/resources/${l.id}`} className="block rounded-xl border border-line p-3 hover:border-brand">
                   <span className="block truncate text-sm font-semibold">{l.title}</span>
                   <span className="text-xs text-muted">
                     {l.offer_type === "sell" ? money(l.price_cents) : l.offer_type === "loan" ? `Loan, ${l.loan_days} days` : "Free"} · {(l.owner as unknown as { display_name: string }).display_name}

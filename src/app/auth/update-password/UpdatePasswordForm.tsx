@@ -16,7 +16,7 @@ export function UpdatePasswordForm() {
         <label className="label" htmlFor="confirm">Confirm password</label>
         <input className="input" id="confirm" name="confirm" type="password" autoComplete="new-password" minLength={8} required />
       </div>
-      {state.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-danger">{state.error}</p>}
+      {state.error && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-danger">{state.error}</p>}
       <ConfirmSubmit className="btn-primary w-full py-2.5" pending="Saving...">Save password</ConfirmSubmit>
     </form>
   );

@@ -1,10 +1,10 @@
-# Kinroot
+# KinConnect
 
 Private family web app: one URL, invite-only sign in, a dashboard, and a left menu with Home, Alerts,
 Resources, Requests, Schedule, Dates, Lists, Ledger, Weather, Vault, Family and Settings.
 
 Built on Next.js 16 (App Router) and Supabase (Auth, Postgres with row level security on every table,
-private Storage, Realtime). The build plan is in the project's `kinroot/build-packet.md`.
+private Storage, Realtime). The build plan is in the project's `kinconnect/build-packet.md`.
 
 ## Run locally
 

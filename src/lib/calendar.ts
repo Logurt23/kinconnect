@@ -103,7 +103,7 @@ export async function syncSource(db: SupabaseClient, s: Source) {
   try {
     let events: Ev[];
     if (s.kind === "ics") {
-      const res = await fetch(normalizeIcsUrl(s.ics_url!), { signal: AbortSignal.timeout(15000), headers: { "User-Agent": "Kinroot calendar" } });
+      const res = await fetch(normalizeIcsUrl(s.ics_url!), { signal: AbortSignal.timeout(15000), headers: { "User-Agent": "KinConnect calendar" } });
       if (!res.ok) throw new Error(`The subscribe link answered ${res.status}.`);
       events = parseIcs(await res.text(), from, to);
     } else {

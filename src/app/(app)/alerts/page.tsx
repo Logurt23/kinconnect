@@ -28,7 +28,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Searc
       <PageHeader icon={BellRing} title="Alerts" subtitle="One-time notices and emergencies, sent to a circle." />
       <Flash searchParams={searchParams} />
 
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.1fr_1fr]">
         <Section title="Send a notice">
           <form action={sendAlert} className="space-y-3">
             <input type="hidden" name="kind" value="notice" />

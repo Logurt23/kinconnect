@@ -37,7 +37,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
     <div className="space-y-5">
       <PageHeader icon={HandHelping} title="Requests" subtitle="Ask the family for a hand: a ride, a sitter, a meal." />
       <Flash searchParams={searchParams} />
-      <div className="grid gap-5 xl:grid-cols-[1fr_1.4fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1.4fr]">
         <Section title="Ask for help">
           <form action={openRequest} className="space-y-3">
             <div><label className="label" htmlFor="category_id">What</label>

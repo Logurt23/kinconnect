@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "kinroot"
+project_id = "kinconnect"
 
 [api]
 enabled = true
@@ -417,9 +417,9 @@ enabled = true
 
 # Invite and reset links use token_hash so app/auth/confirm (from the Supabase starter) can verify them.
 [auth.email.template.invite]
-subject = "You're invited to Kinroot"
+subject = "You're invited to KinConnect"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.recovery]
-subject = "Reset your Kinroot password"
+subject = "Reset your KinConnect password"
 content_path = "./supabase/templates/recovery.html"

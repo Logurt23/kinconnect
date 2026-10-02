@@ -42,12 +42,12 @@ export default async function DatesPage({ searchParams }: { searchParams: Search
       <Section title={`${year} at a glance`} action={
         <span className="flex gap-1 text-xs"><a className="btn-small" href={`?year=${year - 1}`}>{year - 1}</a><a className="btn-small" href={`?year=${year + 1}`}>{year + 1}</a></span>
       }>
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
           {MONTHS.map((m, i) => {
             const b = withBirthday.filter((p) => Number(p.birthday!.slice(5, 7)) === i + 1).sort((x, y) => x.birthday!.slice(8).localeCompare(y.birthday!.slice(8)));
             const ms = inYear.filter((x) => Number(x.happened_on.slice(5, 7)) === i + 1);
             return (
-              <div key={m} className="rounded-lg border border-line p-2">
+              <div key={m} className="rounded-xl border border-line p-2">
                 <h3 className="label">{m}</h3>
                 <ul className="space-y-0.5 text-xs">
                   {b.map((p) => <li key={p.id}>🎂 {Number(p.birthday!.slice(8))} · {p.display_name}</li>)}
@@ -60,7 +60,7 @@ export default async function DatesPage({ searchParams }: { searchParams: Search
         </div>
       </Section>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_1.3fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1.3fr]">
         <Section title="Post a milestone">
           <form action={postMilestone} className="space-y-3">
             {me.role === "admin" && (
@@ -75,7 +75,7 @@ export default async function DatesPage({ searchParams }: { searchParams: Search
             <div><label className="label" htmlFor="title">Title</label><input className="input" id="title" name="title" placeholder="We're engaged!" /></div>
             <div><label className="label" htmlFor="note">Note</label><textarea className="input min-h-16" id="note" name="note" /></div>
             <div><label className="label" htmlFor="link_url">Link to a public post (optional)</label><input className="input" id="link_url" name="link_url" type="url" placeholder="https://" />
-              <p className="mt-1 text-xs text-muted">Kinroot stores the link only. It never opens or copies the post.</p></div>
+              <p className="mt-1 text-xs text-muted">KinConnect stores the link only. It never opens or copies the post.</p></div>
             <CirclePicker circles={circles} defaults={defaultCircleIds(me)} />
             <ConfirmSubmit className="btn-primary" pending="Posting...">Post milestone</ConfirmSubmit>
           </form>

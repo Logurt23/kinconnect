@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (!auth.user) return NextResponse.redirect(`${site}/login`);
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  if (!googleConfigured() || !code || !state || state !== req.cookies.get("kr_google_state")?.value) return fail("Google sign-in didn't complete. Try again.");
+  if (!googleConfigured() || !code || !state || state !== req.cookies.get("kc_google_state")?.value) return fail("Google sign-in didn't complete. Try again.");
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -37,6 +37,6 @@ export async function GET(req: NextRequest) {
   if (source) await syncSource(supabase, { id: source.id, owner_id: auth.user.id, kind: "google", ics_url: null, google_calendar_id: "primary" });
 
   const out = NextResponse.redirect(`${site}/schedule?ok=${encodeURIComponent("Google Calendar connected, read only. Choose who sees it below.")}`);
-  out.cookies.delete({ name: "kr_google_state", path: "/api/google" });
+  out.cookies.delete({ name: "kc_google_state", path: "/api/google" });
   return out;
 }

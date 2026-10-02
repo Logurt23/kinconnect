@@ -1,29 +1,48 @@
 @import "tailwindcss";
 
-/* Calm and dense. Core family is green, extended family is clay; 911 is red, family emergency is amber. */
+/* KinConnect: warm paper background, deep teal for the core family, violet for extended relatives.
+   911 is red and family emergencies are amber, and nothing else uses those two. */
 @theme {
-  --color-brand: #2f6b4f;
-  --color-brand-dark: #24543e;
-  --color-core: #2f6b4f;
-  --color-extended: #8a5a2b;
-  --color-ink: #17201c;
-  --color-rail: #111a16;
-  --color-canvas: #f4f5f2;
-  --color-line: #e2e5df;
-  --color-muted: #66706a;
-  --color-danger: #b91c1c;
+  --color-brand: #0f766e;
+  --color-brand-dark: #115e59;
+  --color-brand-soft: #e6f4f1;
+  --color-core: #0f766e;
+  --color-extended: #7c3aed;
+  --color-ink: #1c1917;
+  --color-canvas: #faf7f2;
+  --color-line: #ebe5da;
+  --color-muted: #78716c;
+  --color-danger: #c81e1e;
   --color-warn: #b45309;
-  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  --shadow-soft: 0 1px 2px rgb(28 25 23 / 0.04), 0 6px 20px rgb(28 25 23 / 0.06);
 }
 
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
 }
 
 html:has(dialog:modal) {
   overflow: hidden;
+}
+
+/* The bottom sheet slides up on phones. */
+dialog.sheet[open] {
+  animation: sheet-up 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.sheet[open] {
+    animation: none;
+  }
 }
 
 @utility link-spinner {
@@ -46,39 +65,40 @@ html:has(dialog:modal) {
   }
 }
 
+/* Buttons are pills with a 44px touch height on phones. */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2 text-[15px] font-bold transition-all outline-none select-none focus-visible:ring-4 focus-visible:ring-brand/25 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 sm:min-h-10 sm:text-sm;
 }
 @utility btn-primary {
-  @apply btn bg-brand text-white shadow-sm shadow-brand/25 hover:bg-brand-dark;
+  @apply btn bg-brand text-white hover:bg-brand-dark;
 }
 @utility btn-secondary {
-  @apply btn border border-line bg-white text-ink shadow-xs hover:border-ink/25 hover:bg-canvas;
+  @apply btn bg-white text-ink shadow-soft ring-1 ring-line hover:ring-ink/20;
 }
 @utility btn-small {
-  @apply btn border border-line bg-white px-2.5 py-1 text-xs text-ink hover:border-ink/25 hover:bg-canvas;
+  @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-white px-3.5 text-[13px] font-semibold text-ink ring-1 ring-line transition-all outline-none hover:ring-ink/25 focus-visible:ring-4 focus-visible:ring-brand/25 active:scale-[0.97] sm:min-h-8 sm:text-xs;
 }
 @utility btn-danger {
-  @apply btn bg-danger text-white shadow-sm shadow-danger/30 hover:bg-red-800;
+  @apply btn bg-danger text-white hover:bg-red-800;
 }
 @utility btn-warn {
-  @apply btn bg-warn text-white shadow-sm shadow-warn/30 hover:bg-amber-800;
+  @apply btn bg-warn text-white hover:bg-amber-800;
 }
+/* 16px text on phones so iOS doesn't zoom into fields. */
 @utility input {
-  @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm shadow-xs transition-colors outline-none placeholder:text-muted/70 hover:border-ink/25 focus:border-brand focus:ring-2 focus:ring-brand/15;
+  @apply min-h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2 text-base transition-colors outline-none placeholder:text-muted/70 hover:border-ink/25 focus:border-brand focus:ring-4 focus:ring-brand/15 sm:min-h-10 sm:text-sm;
 }
 @utility label {
-  @apply mb-1 block text-xs font-semibold tracking-wide text-muted uppercase;
+  @apply mb-1.5 block text-[13px] font-semibold text-muted;
 }
 @utility card {
-  @apply rounded-xl border border-line bg-white shadow-xs;
+  @apply rounded-2xl bg-white shadow-soft;
 }
 @utility pill {
   @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;
 }
-@utility table-head {
-  @apply border-b border-line bg-canvas/70 text-left text-[11px] font-bold tracking-wider text-muted uppercase;
-}
-@utility table-row {
-  @apply border-b border-line transition-colors last:border-0 hover:bg-canvas/60;
+
+input[type="file"] {
+  max-width: 100%;
+  font-size: 14px;
 }

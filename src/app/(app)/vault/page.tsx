@@ -30,7 +30,7 @@ export default async function VaultPage({ searchParams }: { searchParams: Search
       <PageHeader icon={Lock} title="Vault" subtitle="Private documents and photos. Yours alone unless you share one." />
       <p className="text-xs text-muted">This is private family storage, not a certified records system.</p>
       <Flash searchParams={searchParams} />
-      <div className="grid gap-5 xl:grid-cols-[1fr_1.6fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1.6fr]">
         <Section title="Upload">
           <form action={upload} className="space-y-3">
             <div><label className="label" htmlFor="file">Image or PDF</label><input className="input" id="file" name="file" type="file" accept="image/*,application/pdf" required /></div>

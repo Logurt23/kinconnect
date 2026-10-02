@@ -1,8 +1,8 @@
-import { browser, signIn, flash, base } from "./lib.mjs";
+import { browser, signIn, base } from "./lib.mjs";
 const b = await browser();
-const admin = await signIn(b, "admin@kinroot.local", "kinroot-admin-1");
-const ava = await signIn(b, "ava@kinroot.local", "family-pass-1");
-const uncle = await signIn(b, "uncle@kinroot.local", "family-pass-1");
+const admin = await signIn(b, "admin@kinconnect.local", "kinconnect-admin-1");
+const ava = await signIn(b, "ava@kinconnect.local", "family-pass-1");
+const uncle = await signIn(b, "uncle@kinconnect.local", "family-pass-1");
 // Ava pastes an Apple subscribe link (served by the stub)
 await ava.goto(base + "/schedule"); await ava.fill("input[name=ics_url]", "http://127.0.0.1:4555/family.ics"); await ava.fill("input[name=label]", "Ava iCloud");
 await ava.click("text=Add subscribe link"); await ava.waitForSelector("text=Subscribe link added");

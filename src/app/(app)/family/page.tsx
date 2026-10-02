@@ -33,13 +33,13 @@ export default async function FamilyPage({ searchParams }: { searchParams: Searc
 
       {admin && (
         <Section title="Invite someone">
-          <form action={inviteMember} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+          <form action={inviteMember} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <div><label className="label" htmlFor="email">Email</label><input className="input" id="email" name="email" type="email" required /></div>
             <div><label className="label" htmlFor="display_name">Name</label><input className="input" id="display_name" name="display_name" /></div>
             <div><label className="label" htmlFor="role">Role</label>
               <select className="input" id="role" name="role"><option value="member">Member</option><option value="admin">Admin</option></select></div>
-            <div className="md:col-span-3"><CirclePicker circles={circles} defaults={core ? [core.id] : []} label="Circles" /></div>
-            <div className="md:col-span-3"><ConfirmSubmit className="btn-primary" pending="Sending...">Send invite</ConfirmSubmit></div>
+            <div className="sm:col-span-3"><CirclePicker circles={circles} defaults={core ? [core.id] : []} label="Circles" /></div>
+            <div className="sm:col-span-3"><ConfirmSubmit className="btn-primary" pending="Sending...">Send invite</ConfirmSubmit></div>
           </form>
           {(invites ?? []).length > 0 && (
             <ul className="mt-4 divide-y divide-line border-t border-line text-sm">
@@ -55,57 +55,46 @@ export default async function FamilyPage({ searchParams }: { searchParams: Searc
       )}
 
       <Section title="Members">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="table-head"><th className="px-2 py-2">Name</th><th className="px-2 py-2">Circles</th><th className="px-2 py-2">Role</th>{admin && <th className="px-2 py-2" />}</tr></thead>
-            <tbody>
-              {(people ?? []).map((p) => (
-                <tr key={p.id} className={`table-row align-top ${p.active ? "" : "opacity-60"}`}>
-                  <td className="px-2 py-2">
-                    <b>{p.display_name}</b>{!p.active && <span className="pill ml-1 bg-ink/5 text-muted">deactivated</span>}
-                    <span className="block text-xs text-muted">{p.email}{p.home_label ? ` · ${p.home_label}` : ""}</span>
-                  </td>
-                  {admin ? (
-                    <td className="px-2 py-2" colSpan={2}>
-                      <form action={updateMember} className="flex flex-wrap items-center gap-2">
-                        <input type="hidden" name="id" value={p.id} />
-                        {circles.map((c) => (
-                          <label key={c.id} className="flex items-center gap-1">
-                            <input type="checkbox" name="circle_ids" value={c.id} defaultChecked={circlesOf(p.id).includes(c.id)} className="accent-brand" />
-                            <CircleBadge circle={c} />
-                          </label>
-                        ))}
-                        <select name="role" defaultValue={p.role} className="input w-auto py-1"><option value="member">Member</option><option value="admin">Admin</option></select>
-                        <ConfirmSubmit className="btn-small" pending="Saving...">Save</ConfirmSubmit>
-                      </form>
-                    </td>
-                  ) : (
-                    <>
-                      <td className="px-2 py-2"><Badges ids={circlesOf(p.id)} circles={circles} /></td>
-                      <td className="px-2 py-2 capitalize">{p.role}</td>
-                    </>
-                  )}
-                  {admin && (
-                    <td className="px-2 py-2 text-right">
-                      {p.id !== me.id && (
-                        <form action={setActive}>
-                          <input type="hidden" name="id" value={p.id} /><input type="hidden" name="active" value={String(!p.active)} />
-                          <ConfirmSubmit className="btn-small" confirm={p.active ? `Deactivate ${p.display_name}? They keep their history but lose access.` : undefined}>
-                            {p.active ? "Deactivate" : "Reactivate"}
-                          </ConfirmSubmit>
-                        </form>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="divide-y divide-line">
+          {(people ?? []).map((p) => (
+            <li key={p.id} className={`py-3 first:pt-1 last:pb-0 ${p.active ? "" : "opacity-60"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <b className="text-[15px]">{p.display_name}</b>{!p.active && <span className="pill ml-1.5 bg-ink/5 text-muted">deactivated</span>}
+                  {p.role === "admin" && <span className="pill ml-1.5 bg-[#fde68a] text-ink">admin</span>}
+                  <span className="block truncate text-xs text-muted">{p.email}{p.home_label ? ` · ${p.home_label}` : ""}</span>
+                </div>
+                {admin && p.id !== me.id && (
+                  <form action={setActive}>
+                    <input type="hidden" name="id" value={p.id} /><input type="hidden" name="active" value={String(!p.active)} />
+                    <ConfirmSubmit className="btn-small" confirm={p.active ? `Deactivate ${p.display_name}? They keep their history but lose access.` : undefined}>
+                      {p.active ? "Deactivate" : "Reactivate"}
+                    </ConfirmSubmit>
+                  </form>
+                )}
+              </div>
+              {admin ? (
+                <form action={updateMember} className="mt-2 flex flex-wrap items-center gap-2">
+                  <input type="hidden" name="id" value={p.id} />
+                  {circles.map((c) => (
+                    <label key={c.id} className="flex min-h-9 items-center gap-1.5 rounded-full bg-canvas px-2.5">
+                      <input type="checkbox" name="circle_ids" value={c.id} defaultChecked={circlesOf(p.id).includes(c.id)} className="h-4 w-4 accent-brand" />
+                      <CircleBadge circle={c} />
+                    </label>
+                  ))}
+                  <select name="role" defaultValue={p.role} className="input min-h-9 w-auto py-1" aria-label="Role"><option value="member">Member</option><option value="admin">Admin</option></select>
+                  <ConfirmSubmit className="btn-small" pending="Saving...">Save</ConfirmSubmit>
+                </form>
+              ) : (
+                <div className="mt-1.5"><Badges ids={circlesOf(p.id)} circles={circles} /></div>
+              )}
+            </li>
+          ))}
+        </ul>
       </Section>
 
       {admin && (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           <Section title="Circles">
             <ul className="mb-3 flex flex-wrap gap-2">{circles.map((c) => <li key={c.id}><CircleBadge circle={c} /></li>)}</ul>
             <p className="mb-3 text-xs text-muted">Core gets every alert by default. Extended relatives are included per feature. Add a branch circle if the family later splits.</p>
@@ -116,14 +105,15 @@ export default async function FamilyPage({ searchParams }: { searchParams: Searc
           </Section>
           <Section title="Categories">
             {(["resource", "request"] as const).map((scope) => (
-              <div key={scope} className="mb-4">
-                <h3 className="label">{scope === "resource" ? "Resources" : "Requests"}</h3>
+              <details key={scope} className="mb-3 rounded-2xl bg-canvas p-3 open:pb-4">
+                <summary className="cursor-pointer text-[15px] font-semibold">{scope === "resource" ? "Resource categories" : "Request types"} <span className="text-muted">({(categories ?? []).filter((c) => c.scope === scope).length})</span></summary>
+                <div className="mt-3">
                 <ul className="space-y-1">
                   {(categories ?? []).filter((c) => c.scope === scope).map((c) => (
                     <li key={c.id} className="flex gap-1">
                       <form action={renameCategory} className="flex flex-1 gap-1">
                         <input type="hidden" name="id" value={c.id} />
-                        <input className="input py-1" name="name" defaultValue={c.name} aria-label="Category name" />
+                        <input className="input min-h-9 py-1" name="name" defaultValue={c.name} aria-label="Category name" />
                         <ConfirmSubmit className="btn-small">Rename</ConfirmSubmit>
                       </form>
                       <form action={deleteCategory}><input type="hidden" name="id" value={c.id} /><ConfirmSubmit className="btn-small" confirm={`Remove ${c.name}?`}>Remove</ConfirmSubmit></form>
@@ -132,10 +122,11 @@ export default async function FamilyPage({ searchParams }: { searchParams: Searc
                 </ul>
                 <form action={addCategory} className="mt-2 flex gap-1">
                   <input type="hidden" name="scope" value={scope} />
-                  <input className="input py-1" name="name" placeholder="New category" required />
+                  <input className="input min-h-9 py-1" name="name" placeholder="New category" required />
                   <ConfirmSubmit className="btn-small">Add</ConfirmSubmit>
                 </form>
-              </div>
+                </div>
+              </details>
             ))}
           </Section>
         </div>
