@@ -36,6 +36,45 @@ Invite and password-reset emails go to Mailpit at http://127.0.0.1:54324 locally
    and Apple subscribe links and manual blocks still work.
 5. `npm run bootstrap-admin` once with the production keys to create the first admin.
 
+## Deploy on Google Cloud (Cloud Run)
+
+The app runs as a container on Cloud Run; Supabase still holds the database, sign-in and files. Do Deploy
+steps 1, 2, 4 and 5 above, then:
+
+```sh
+PROJECT=your-gcp-project REGION=us-central1 SITE=https://family.example.com
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
+  secretmanager.googleapis.com cloudscheduler.googleapis.com --project $PROJECT
+
+# Secrets live in Secret Manager, not in the image.
+for s in SUPABASE_SECRET_KEY TOKEN_ENCRYPTION_KEY CRON_SECRET GOOGLE_CLIENT_SECRET; do
+  printf '%s' "<value>" | gcloud secrets create $s --data-file=- --project $PROJECT
+done
+
+# NEXT_PUBLIC_* values are baked in at build time (cloudbuild.yaml).
+gcloud builds submit --project $PROJECT --region $REGION --config cloudbuild.yaml \
+  --substitutions "_REGION=$REGION,_SUPABASE_URL=https://YOUR-REF.supabase.co,_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...,_SITE_URL=$SITE"
+
+gcloud run deploy kinconnect --project $PROJECT --region $REGION --allow-unauthenticated \
+  --image $REGION-docker.pkg.dev/$PROJECT/kinconnect/app \
+  --set-env-vars "APP_TIMEZONE=America/Chicago,NWS_USER_AGENT=KinConnect family app (you@example.com),GOOGLE_CLIENT_ID=...,NEXT_PUBLIC_SUPABASE_URL=https://YOUR-REF.supabase.co,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...,NEXT_PUBLIC_SITE_URL=$SITE" \
+  --set-secrets "SUPABASE_SECRET_KEY=SUPABASE_SECRET_KEY:latest,TOKEN_ENCRYPTION_KEY=TOKEN_ENCRYPTION_KEY:latest,CRON_SECRET=CRON_SECRET:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest"
+
+# The two sweeps that vercel.json schedules on Vercel.
+CRON="Authorization=Bearer $(gcloud secrets versions access latest --secret CRON_SECRET --project $PROJECT)"
+gcloud scheduler jobs create http kinconnect-weather --project $PROJECT --location $REGION \
+  --schedule "*/15 * * * *" --http-method GET --uri "$SITE/api/cron/weather" --headers "$CRON"
+gcloud scheduler jobs create http kinconnect-calendars --project $PROJECT --location $REGION \
+  --schedule "0 * * * *" --http-method GET --uri "$SITE/api/cron/calendars" --headers "$CRON"
+```
+
+The Cloud Build service account needs Artifact Registry write access (create the `kinconnect` repository
+first with `gcloud artifacts repositories create kinconnect --repository-format docker --location $REGION`),
+and the Cloud Run service account needs Secret Manager Secret Accessor. Map your domain with
+`gcloud run domain-mappings create` or a load balancer, and use that domain as the Supabase Site URL and
+the Google OAuth redirect. The Home page's quick weather check runs after the response; on Cloud Run's
+default billing that background work is slowed, which is fine because the 15-minute sweep is the main one.
+
 ## How the rules are enforced
 
 - Visibility is circle overlap (`circle_ids && my_circle_ids()`) in RLS, not in the UI.

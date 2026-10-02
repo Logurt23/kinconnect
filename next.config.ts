@@ -31,6 +31,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // A self-contained server bundle for the Cloud Run container (see Dockerfile). Vercel ignores it.
+  output: "standalone",
   // Vault and listing photos are uploaded through server actions.
   experimental: { serverActions: { bodySizeLimit: "20mb" } },
   async headers() {

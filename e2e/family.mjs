@@ -37,7 +37,7 @@ console.log("pending listed", await admin.locator("li:has-text('cancelme@kinconn
 console.log("accepted not listed", await admin.locator("li:has-text('ava@kinconnect.local') >> button:text-is('Cancel')").count() === 0);
 admin.once("dialog", (d) => d.accept());
 await admin.click("li:has-text('cancelme@kinconnect.local') >> button:text-is('Cancel')");
-await admin.waitForURL(/ok=Invite/);
+await admin.waitForURL(/canceled/);
 console.log("cancel", await flash(admin));
 const ctxC = await b.newContext(); const pc = await ctxC.newPage();
 await pc.goto(pendingLink);
