@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* Calm and dense. Core family is green, extended family is clay; 911 is red, family emergency is amber. */
+@theme {
+  --color-brand: #2f6b4f;
+  --color-brand-dark: #24543e;
+  --color-core: #2f6b4f;
+  --color-extended: #8a5a2b;
+  --color-ink: #17201c;
+  --color-rail: #111a16;
+  --color-canvas: #f4f5f2;
+  --color-line: #e2e5df;
+  --color-muted: #66706a;
+  --color-danger: #b91c1c;
+  --color-warn: #b45309;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+html:has(dialog:modal) {
+  overflow: hidden;
+}
+
+@utility link-spinner {
+  @apply h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent opacity-0;
+  animation:
+    link-spinner-show 0s 150ms forwards,
+    link-spinner-turn 0.7s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: link-spinner-show 0s 150ms forwards;
+  }
+}
+@keyframes link-spinner-show {
+  to {
+    opacity: 0.85;
+  }
+}
+@keyframes link-spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand text-white shadow-sm shadow-brand/25 hover:bg-brand-dark;
+}
+@utility btn-secondary {
+  @apply btn border border-line bg-white text-ink shadow-xs hover:border-ink/25 hover:bg-canvas;
+}
+@utility btn-small {
+  @apply btn border border-line bg-white px-2.5 py-1 text-xs text-ink hover:border-ink/25 hover:bg-canvas;
+}
+@utility btn-danger {
+  @apply btn bg-danger text-white shadow-sm shadow-danger/30 hover:bg-red-800;
+}
+@utility btn-warn {
+  @apply btn bg-warn text-white shadow-sm shadow-warn/30 hover:bg-amber-800;
+}
+@utility input {
+  @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm shadow-xs transition-colors outline-none placeholder:text-muted/70 hover:border-ink/25 focus:border-brand focus:ring-2 focus:ring-brand/15;
+}
+@utility label {
+  @apply mb-1 block text-xs font-semibold tracking-wide text-muted uppercase;
+}
+@utility card {
+  @apply rounded-xl border border-line bg-white shadow-xs;
+}
+@utility pill {
+  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+}
+@utility table-head {
+  @apply border-b border-line bg-canvas/70 text-left text-[11px] font-bold tracking-wider text-muted uppercase;
+}
+@utility table-row {
+  @apply border-b border-line transition-colors last:border-0 hover:bg-canvas/60;
+}
