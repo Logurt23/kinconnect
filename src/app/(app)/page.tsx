@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, CloudLightning, Home as HomeIcon, Siren } from "lucide-react";
 import { Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { requireMember } from "@/lib/auth";
-import { ALERT_LABEL } from "@/lib/alerts";
+import { ALERT_LABEL } from "@/lib/alerts-labels";
 import { ago, dateLabel, dateTimeLabel, money, nextBirthday } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { checkWeatherFor } from "@/lib/weather";
