@@ -6,7 +6,7 @@ import { CircleBadge, Empty, PageHeader, Section } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
 import { googleConfigured } from "@/lib/calendar";
 import { ago } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { addBlock, addGoogleCalendar, addIcs, deleteBlock, removeSource, syncNow, updateSource } from "./actions";
 
 export const metadata = { title: "Schedule" };
@@ -33,11 +33,11 @@ export default async function SchedulePage({ searchParams }: { searchParams: Sea
     end = addDays(start, 42);
     prev = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1); next = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
   }
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data: evs }, { data: sources }, { data: blocks }, circles] = await Promise.all([
-    supabase.rpc("family_events", { from_ts: start.toISOString(), to_ts: end.toISOString() }),
-    supabase.from("calendar_sources").select("*").eq("owner_id", me.id).order("created_at"),
-    supabase.from("calendar_events").select("id, title, starts_at, ends_at, all_day, source:calendar_sources!inner(kind, owner_id)")
+    db.rpc("family_events", { from_ts: start.toISOString(), to_ts: end.toISOString() }),
+    db.from("calendar_sources").select("*").eq("owner_id", me.id).order("created_at"),
+    db.from("calendar_events").select("id, title, starts_at, ends_at, all_day, source:calendar_sources!inner(kind, owner_id)")
       .eq("source.kind", "manual").eq("source.owner_id", me.id).gte("ends_at", new Date().toISOString()).order("starts_at").limit(20),
     allCircles(),
   ]);

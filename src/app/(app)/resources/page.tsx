@@ -4,19 +4,19 @@ import { Flash, type Search } from "@/components/Flash";
 import { offerLabel } from "@/components/OfferLabel";
 import { CircleBadges, Empty, PageHeader, StatusPill } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
-import { signedUrls } from "@/lib/storage";
-import { createClient } from "@/lib/supabase/server";
+import { fileUrls } from "@/lib/storage";
+import { createClient } from "@/lib/db";
 
 export const metadata = { title: "Resources" };
 
 export default async function ResourcesPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
   const q = await searchParams;
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data: categories }, circles] = await Promise.all([
-    supabase.from("categories").select("id, name").eq("scope", "resource").order("sort"), allCircles(),
+    db.from("categories").select("id, name").eq("scope", "resource").order("sort"), allCircles(),
   ]);
-  let query = supabase.from("listings")
+  let query = db.from("listings")
     .select("id, title, offer_type, price_cents, loan_days, status, circle_ids, owner_id, quantity, owner:profiles(display_name), category:categories(name), photos:listing_photos(path, sort)")
     .order("created_at", { ascending: false });
   const cat = typeof q.category === "string" ? q.category : "";
@@ -28,7 +28,7 @@ export default async function ResourcesPage({ searchParams }: { searchParams: Se
   else if (view === "open") query = query.neq("status", "closed");
   const { data: listings } = await query;
   const covers = (listings ?? []).map((l) => [...(l.photos ?? [])].sort((a, b) => a.sort - b.sort)[0]?.path).filter(Boolean) as string[];
-  const urls = await signedUrls("listing-photos", covers, 300);
+  const urls = fileUrls("listing-photos", covers);
 
   return (
     <div className="space-y-5">

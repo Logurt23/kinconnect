@@ -1,14 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { GOOGLE_SCOPE, googleConfigured, googleRedirect } from "@/lib/calendar";
-import { createClient } from "@/lib/supabase/server";
+import { currentUser } from "@/lib/session";
 
 /** Read-only Google Calendar consent, on the server. Nothing is ever written back to Google. */
 export async function GET() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
   const site = process.env.NEXT_PUBLIC_SITE_URL!;
-  if (!data.user) return NextResponse.redirect(`${site}/login`);
+  if (!(await currentUser())) return NextResponse.redirect(`${site}/login`);
   if (!googleConfigured()) return NextResponse.redirect(`${site}/schedule?error=${encodeURIComponent("Google isn't set up on this site yet.")}`);
   const state = randomBytes(16).toString("hex");
   const q = new URLSearchParams({

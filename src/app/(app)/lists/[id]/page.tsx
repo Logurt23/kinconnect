@@ -6,7 +6,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { CircleBadges, Empty, PageHeader, Section } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
 import { money } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { addItem, deleteList, removeItem, toggleClaim } from "../actions";
 
 export const metadata = { title: "List" };
@@ -14,13 +14,13 @@ export const metadata = { title: "List" };
 export default async function ListPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Search }) {
   const { id } = await params;
   const me = await requireMember();
-  const supabase = await createClient();
-  const { data: list } = await supabase.from("gift_lists").select("*, owner:profiles(display_name)").eq("id", id).maybeSingle();
+  const db = await createClient();
+  const { data: list } = await db.from("gift_lists").select("*, owner:profiles(display_name)").eq("id", id).maybeSingle();
   if (!list) notFound();
   const mine = list.owner_id === me.id;
-  const { data: items } = await supabase.from("gift_items").select("id, title, url, note, price_guess_cents").eq("list_id", id).order("created_at");
+  const { data: items } = await db.from("gift_items").select("id, title, url, note, price_guess_cents").eq("list_id", id).order("created_at");
   // RLS returns no claims at all to the list owner, so this is empty for them by construction.
-  const { data: claims } = mine ? { data: [] } : await supabase.from("gift_claims")
+  const { data: claims } = mine ? { data: [] } : await db.from("gift_claims")
     .select("item_id, claimed_by, claimer:profiles(display_name)").in("item_id", (items ?? []).map((i) => i.id));
   const claimOf = (itemId: string) => (claims ?? []).find((c) => c.item_id === itemId);
   const circles = await allCircles();

@@ -4,7 +4,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { CircleBadge, Empty, PageHeader, Section } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
 import { dateLabel } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { remove, share, unshare, upload } from "./actions";
 
 export const metadata = { title: "Vault" };
@@ -13,11 +13,11 @@ type Item = { id: string; title: string; mime: string; size_bytes: number; creat
 
 export default async function VaultPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data }, { data: shares }, { data: people }, circles] = await Promise.all([
-    supabase.from("vault_items").select("id, title, mime, size_bytes, created_at, owner_id, owner:profiles(display_name)").order("created_at", { ascending: false }),
-    supabase.from("vault_shares").select("id, item_id, user_id, circle_id, person:profiles(display_name)"),
-    supabase.from("profiles").select("id, display_name").eq("active", true).neq("id", me.id).order("display_name"),
+    db.from("vault_items").select("id, title, mime, size_bytes, created_at, owner_id, owner:profiles(display_name)").order("created_at", { ascending: false }),
+    db.from("vault_shares").select("id, item_id, user_id, circle_id, person:profiles(display_name)"),
+    db.from("profiles").select("id, display_name").eq("active", true).neq("id", me.id).order("display_name"),
     allCircles(),
   ]);
   const items = (data ?? []) as unknown as Item[];

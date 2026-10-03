@@ -2,15 +2,12 @@ import { LiveRefresh } from "@/components/LiveRefresh";
 import { MobileNav, SideNav } from "@/components/AppNav";
 import { requireMember } from "@/lib/auth";
 import { unreadAlertCount } from "@/lib/alerts";
-import { signedUrls } from "@/lib/storage";
+import { fileUrl } from "@/lib/storage";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const me = await requireMember();
-  const [unread, photos] = await Promise.all([
-    unreadAlertCount(),
-    me.photo_path ? signedUrls("avatars", [me.photo_path], 3600) : Promise.resolve(new Map<string, string>()),
-  ]);
-  const nav = { name: me.display_name, photo: me.photo_path ? photos.get(me.photo_path) ?? null : null, circles: me.circles, unread };
+  const unread = await unreadAlertCount();
+  const nav = { name: me.display_name, photo: me.photo_path ? fileUrl("avatars", me.photo_path) : null, circles: me.circles, unread };
   return (
     <div className="min-h-dvh lg:flex">
       <a href="#main" className="fixed top-3 left-3 z-50 -translate-y-24 rounded-full bg-white px-4 py-2 text-sm font-semibold shadow-soft ring-2 ring-brand focus:translate-y-0">

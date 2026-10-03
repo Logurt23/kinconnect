@@ -5,7 +5,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { CircleBadges, CirclePicker, Empty, PageHeader, Section } from "@/components/ui";
 import { allCircles, defaultCircleIds, requireMember, alertCircles } from "@/lib/auth";
 import { ago } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { sendAlert } from "./actions";
 import { KindPill } from "@/components/KindPill";
 
@@ -13,13 +13,13 @@ export const metadata = { title: "Alerts" };
 
 export default async function AlertsPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const supabase = await createClient();
+  const db = await createClient();
   const [circles, pick] = await Promise.all([allCircles(), alertCircles(me)]);
   const defaults = defaultCircleIds(me);
   const [{ data: alerts }, { data: receipts }] = await Promise.all([
-    supabase.from("alerts").select("id, kind, message, circle_ids, opened_at, closed_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
+    db.from("alerts").select("id, kind, message, circle_ids, opened_at, closed_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
       .order("opened_at", { ascending: false }).limit(100),
-    supabase.from("alert_receipts").select("alert_id").eq("user_id", me.id),
+    db.from("alert_receipts").select("alert_id").eq("user_id", me.id),
   ]);
   const read = new Set((receipts ?? []).map((r) => r.alert_id));
 

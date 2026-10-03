@@ -4,8 +4,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { CircleBadge, CirclePicker, Empty, PageHeader, Section } from "@/components/ui";
 import { allCircles, requireMember, type Circle } from "@/lib/auth";
 import { dateLabel } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, createClient } from "@/lib/db";
 import { addCategory, addCircle, cancelInvite, deleteCategory, inviteMember, renameCategory, setActive, updateMember } from "./actions";
 
 export const metadata = { title: "Family" };
@@ -13,15 +12,15 @@ export const metadata = { title: "Family" };
 export default async function FamilyPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
   const admin = me.role === "admin";
-  const supabase = await createClient();
+  const member = await createClient();
   const circles = await allCircles();
   // Admins also see deactivated members, which RLS hides from everyone, so they read with the service key.
-  const db = admin ? createAdminClient() : supabase;
+  const db = admin ? createAdminClient() : member;
   const [{ data: people }, { data: links }, { data: invites }, { data: categories }] = await Promise.all([
     db.from("profiles").select("id, email, display_name, role, active, birthday, home_label").order("display_name"),
     db.from("circle_members").select("circle_id, user_id"),
     admin ? db.from("invites").select("*").order("created_at") : Promise.resolve({ data: [] }),
-    supabase.from("categories").select("id, scope, name").order("scope").order("sort").order("name"),
+    member.from("categories").select("id, scope, name").order("scope").order("sort").order("name"),
   ]);
   const circlesOf = (id: string) => (links ?? []).filter((l) => l.user_id === id).map((l) => l.circle_id);
   const core = circles.find((c) => c.kind === "core");

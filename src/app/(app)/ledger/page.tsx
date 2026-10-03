@@ -4,7 +4,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { requireMember } from "@/lib/auth";
 import { dateLabel, money } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { addEntry, cancelEntry, markPaid } from "./actions";
 
 export const metadata = { title: "Ledger" };
@@ -18,10 +18,10 @@ const KIND: Record<string, string> = { request: "Request", offer: "Offer to send
 
 export default async function LedgerPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data }, { data: people }] = await Promise.all([
-    supabase.from("ledger_entries").select("*, from:profiles!ledger_entries_from_id_fkey(display_name), to:profiles!ledger_entries_to_id_fkey(display_name)").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, display_name").eq("active", true).neq("id", me.id).order("display_name"),
+    db.from("ledger_entries").select("*, from:profiles!ledger_entries_from_id_fkey(display_name), to:profiles!ledger_entries_to_id_fkey(display_name)").order("created_at", { ascending: false }),
+    db.from("profiles").select("id, display_name").eq("active", true).neq("id", me.id).order("display_name"),
   ]);
   const entries = (data ?? []) as unknown as Entry[];
   // Positive: they owe me. Open entries only.

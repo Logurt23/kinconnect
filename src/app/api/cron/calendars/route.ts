@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { syncSource } from "@/lib/calendar";
 import { authorizeCron, eachLimited } from "@/lib/cron";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/db";
 
 export const maxDuration = 60;
 

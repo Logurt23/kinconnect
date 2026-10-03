@@ -1,9 +1,9 @@
 import "server-only";
 import ICAL from "ical.js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { assertPublicUrl, fetchPublicText } from "@/lib/net";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/db";
 
 export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events.readonly";
 export const googleConfigured = () => Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -97,7 +97,7 @@ async function googleEvents(userId: string, calendarId: string, from: Date, to: 
 }
 
 /** Re-reads one subscribed source into calendar_events. Manual sources have nothing to sync. */
-export async function syncSource(db: SupabaseClient, s: Source) {
+export async function syncSource(db: Db, s: Source) {
   if (s.kind === "manual") return;
   const from = new Date(Date.now() - WINDOW_BACK);
   const to = new Date(Date.now() + WINDOW_AHEAD);

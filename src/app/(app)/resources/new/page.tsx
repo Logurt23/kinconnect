@@ -4,15 +4,15 @@ import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { Flash, type Search } from "@/components/Flash";
 import { CirclePicker, PageHeader, Section } from "@/components/ui";
 import { defaultCircleIds, requireMember, shareableCircles } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { createListing } from "../actions";
 
 export const metadata = { title: "New listing" };
 
 export default async function NewListing({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const supabase = await createClient();
-  const { data: categories } = await supabase.from("categories").select("id, name").eq("scope", "resource").order("sort");
+  const db = await createClient();
+  const { data: categories } = await db.from("categories").select("id, name").eq("scope", "resource").order("sort");
   const circles = await shareableCircles();
   return (
     <div className="max-w-3xl space-y-5">

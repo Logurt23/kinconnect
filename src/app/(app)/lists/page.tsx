@@ -4,16 +4,16 @@ import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { Flash, type Search } from "@/components/Flash";
 import { CircleBadges, CirclePicker, Empty, PageHeader, Section } from "@/components/ui";
 import { allCircles, defaultCircleIds, requireMember } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { createList } from "./actions";
 
 export const metadata = { title: "Lists" };
 
 export default async function ListsPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data: lists }, circles] = await Promise.all([
-    supabase.from("gift_lists").select("id, kind, title, owner_id, circle_ids, owner:profiles(display_name), items:gift_items(count)").order("created_at", { ascending: false }),
+    db.from("gift_lists").select("id, kind, title, owner_id, circle_ids, owner:profiles(display_name), items:gift_items(count)").order("created_at", { ascending: false }),
     allCircles(),
   ]);
   const mine = (lists ?? []).filter((l) => l.owner_id === me.id);

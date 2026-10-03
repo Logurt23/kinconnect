@@ -7,8 +7,8 @@ import { offerLabel } from "@/components/OfferLabel";
 import { CircleBadges, Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
 import { dateLabel, isoDay } from "@/lib/format";
-import { signedUrls } from "@/lib/storage";
-import { createClient } from "@/lib/supabase/server";
+import { fileUrls } from "@/lib/storage";
+import { createClient } from "@/lib/db";
 import { decide, reserve, setListingStatus } from "../actions";
 
 export const metadata = { title: "Listing" };
@@ -16,17 +16,17 @@ export const metadata = { title: "Listing" };
 export default async function ListingPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Search }) {
   const { id } = await params;
   const me = await requireMember();
-  const supabase = await createClient();
-  const { data: l } = await supabase.from("listings")
+  const db = await createClient();
+  const { data: l } = await db.from("listings")
     .select("*, owner:profiles(display_name), category:categories(name), photos:listing_photos(path, sort)").eq("id", id).maybeSingle();
   if (!l) notFound();
   const mine = l.owner_id === me.id;
   const [{ data: reservations }, circles] = await Promise.all([
-    supabase.from("reservations").select("id, status, starts_on, ends_on, note, requester_id, requester:profiles(display_name)").eq("listing_id", id).order("created_at", { ascending: false }),
+    db.from("reservations").select("id, status, starts_on, ends_on, note, requester_id, requester:profiles(display_name)").eq("listing_id", id).order("created_at", { ascending: false }),
     allCircles(),
   ]);
   const photos = [...(l.photos ?? [])].sort((a: { sort: number }, b: { sort: number }) => a.sort - b.sort).map((p: { path: string }) => p.path);
-  const urls = await signedUrls("listing-photos", photos, 300);
+  const urls = fileUrls("listing-photos", photos);
   const today = isoDay(0);
   const end = l.loan_days ? isoDay(l.loan_days) : "";
   const myPending = (reservations ?? []).find((r) => r.requester_id === me.id && ["pending", "confirmed"].includes(r.status));

@@ -6,8 +6,9 @@ export function register() {
 
 /** Fail at boot, not on the first request that happens to need a missing setting. */
 function checkEnv() {
-  const missing = ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SECRET_KEY", "NEXT_PUBLIC_SITE_URL"].filter((k) => !process.env[k]);
+  const missing = ["POSTGREST_URL", "PGRST_JWT_SECRET", "GOOGLE_CLOUD_PROJECT", "IDENTITY_PLATFORM_API_KEY", "GCS_BUCKET", "NEXT_PUBLIC_SITE_URL"].filter((k) => !process.env[k]);
   if (missing.length) throw new Error(`KinConnect is missing settings: ${missing.join(", ")}. See .env.example.`);
+  if (process.env.PGRST_JWT_SECRET!.length < 32) throw new Error("PGRST_JWT_SECRET must be at least 32 characters (PostgREST refuses shorter ones).");
   const warn = (msg: string) => console.warn(`[kinconnect] ${msg}`);
   if (process.env.TOKEN_ENCRYPTION_KEY && Buffer.from(process.env.TOKEN_ENCRYPTION_KEY, "base64").length !== 32)
     warn("TOKEN_ENCRYPTION_KEY must be 32 bytes, base64 (openssl rand -base64 32). Google Calendar won't connect.");

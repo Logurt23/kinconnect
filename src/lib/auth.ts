@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
+import { currentUser } from "@/lib/session";
 
 export type Circle = { id: string; name: string; kind: "core" | "extended" | "branch"; color: string };
 export type Member = {
@@ -23,14 +24,14 @@ export type Member = {
  * navigation, so every page calls this as well (cached per request).
  */
 export const requireMember = cache(async (): Promise<Member> => {
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/login");
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const db = await createClient();
   // Profile and circles in one round trip.
-  const { data: profile } = await supabase
+  const { data: profile } = await db
     .from("profiles")
     .select("*, circle_members(circles(id, name, kind, color))")
-    .eq("id", auth.user.id)
+    .eq("id", user.id)
     .maybeSingle();
   if (!profile || !profile.active) redirect("/login?error=inactive");
   const { circle_members: rows, ...rest } = profile as Omit<Member, "circles"> & { circle_members: { circles: Circle | null }[] };
@@ -46,8 +47,8 @@ export async function requireAdmin(): Promise<Member> {
 
 /** Every circle, for pickers. */
 export const allCircles = cache(async (): Promise<Circle[]> => {
-  const supabase = await createClient();
-  const { data } = await supabase.from("circles").select("id, name, kind, color").order("kind").order("name");
+  const db = await createClient();
+  const { data } = await db.from("circles").select("id, name, kind, color").order("kind").order("name");
   return (data ?? []) as Circle[];
 });
 

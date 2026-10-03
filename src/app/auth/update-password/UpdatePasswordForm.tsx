@@ -4,10 +4,11 @@ import { useActionState } from "react";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { updatePassword } from "./actions";
 
-export function UpdatePasswordForm() {
+export function UpdatePasswordForm({ code }: { code: string }) {
   const [state, action] = useActionState(updatePassword, { error: null as string | null });
   return (
     <form action={action} className="mt-6 space-y-4">
+      <input type="hidden" name="code" value={code} />
       <div>
         <label className="label" htmlFor="password">New password</label>
         <input className="input" id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />

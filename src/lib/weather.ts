@@ -1,7 +1,7 @@
 import "server-only";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/db";
 import type { Member } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 
 export type NwsAlert = { id: string; event: string; severity: string; headline: string | null; expires: string | null; areaDesc: string };
 
@@ -35,7 +35,7 @@ export async function alertsAt(lat: number, lon: number): Promise<NwsAlert[] | n
 export const isSevere = (a: NwsAlert) => a.severity === "Severe" || a.severity === "Extreme";
 
 /** Records a check-in prompt for each Severe or Extreme alert covering the member's point. */
-export async function recordPrompts(db: SupabaseClient, userId: string, lat: number, lon: number) {
+export async function recordPrompts(db: Db, userId: string, lat: number, lon: number) {
   const alerts = await alertsAt(lat, lon);
   const severe = (alerts ?? []).filter(isSevere);
   if (severe.length) {
@@ -48,7 +48,7 @@ export async function recordPrompts(db: SupabaseClient, userId: string, lat: num
 }
 
 /** Called on Home and Weather so a located member is prompted even if the cron hasn't run. */
-export async function checkWeatherFor(me: Member, db?: SupabaseClient) {
+export async function checkWeatherFor(me: Member, db?: Db) {
   if (me.lat == null || me.lon == null) return null;
   return recordPrompts(db ?? (await createClient()), me.id, me.lat, me.lon);
 }

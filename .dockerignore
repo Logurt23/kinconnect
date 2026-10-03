@@ -4,5 +4,6 @@ node_modules
 .env*
 !.env.example
 e2e/out
-supabase/.temp
+.firebase
+firebase-debug.log
 *.tsbuildinfo

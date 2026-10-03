@@ -12,16 +12,20 @@ export async function signIn(b, email, password) {
   await page.waitForURL(base + "/", { timeout: 30000 });
   return page;
 }
-export async function inviteLink(email) {
+export const authEmulator = "http://127.0.0.1:9099/emulator/v1/projects/demo-kinconnect";
+/** The newest "set your password" link the Auth emulator would have emailed, pointed at our action URL. */
+export async function inviteLink(email, after = 0) {
   for (let i = 0; i < 20; i++) {
-    const list = await (await fetch("http://127.0.0.1:54324/api/v1/search?query=" + encodeURIComponent("to:" + email))).json();
-    if (list.messages?.length) {
-      const m = await (await fetch("http://127.0.0.1:54324/api/v1/message/" + list.messages[0].ID)).json();
-      return m.HTML.match(/href="([^"]+)"/)[1].replace(/&amp;/g, "&");
-    }
+    const { oobCodes = [] } = await (await fetch(authEmulator + "/oobCodes")).json();
+    const mine = oobCodes.filter((c) => c.email === email && c.requestType === "PASSWORD_RESET");
+    if (mine.length > after) return `${base}/auth/action?mode=resetPassword&oobCode=${mine.at(-1).oobCode}`;
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error("no mail for " + email);
+}
+export async function mailCount(email) {
+  const { oobCodes = [] } = await (await fetch(authEmulator + "/oobCodes")).json();
+  return oobCodes.filter((c) => c.email === email).length;
 }
 export async function flash(page) {
   return (await page.locator("[role=alert], .bg-green-50").first().textContent({ timeout: 5000 }).catch(() => null));

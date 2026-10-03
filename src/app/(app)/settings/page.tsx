@@ -5,14 +5,14 @@ import { CircleBadge, PageHeader, Section } from "@/components/ui";
 import { UseMyLocation } from "@/components/UseMyLocation";
 import { requireMember } from "@/lib/auth";
 import { initials } from "@/lib/format";
-import { signedUrls } from "@/lib/storage";
+import { fileUrl } from "@/lib/storage";
 import { changePassword, saveProfile } from "./actions";
 
 export const metadata = { title: "Settings" };
 
 export default async function SettingsPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const photo = me.photo_path ? (await signedUrls("avatars", [me.photo_path], 300)).get(me.photo_path) : null;
+  const photo = me.photo_path ? fileUrl("avatars", me.photo_path) : null;
   return (
     <div className="max-w-3xl space-y-5">
       <PageHeader icon={Settings} title="Settings" subtitle={me.email} />

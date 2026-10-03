@@ -1,18 +1,15 @@
 import type { NextConfig } from "next";
 
 const dev = process.env.NODE_ENV !== "production";
-const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const supabaseWs = supabase.replace(/^http/, "ws");
-
-// Next.js inlines its bootstrap scripts, so script-src keeps 'unsafe-inline'; everything else is
-// locked to this site and the Supabase project (signed file links, Realtime socket).
+// Next.js inlines its bootstrap scripts, so script-src keeps 'unsafe-inline'; everything else is locked
+// to this site (files are served from /files, live refresh polls /api/live).
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${supabase}`,
+  "img-src 'self' data: blob:",
   "font-src 'self'",
-  `connect-src 'self' ${supabase} ${supabaseWs}${dev ? " ws:" : ""}`,
+  `connect-src 'self'${dev ? " ws:" : ""}`,
   "frame-ancestors 'none'",
   "form-action 'self'",
   "base-uri 'self'",

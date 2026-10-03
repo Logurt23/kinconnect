@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authorizeCron, eachLimited } from "@/lib/cron";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/db";
 import { recordPrompts } from "@/lib/weather";
 
 export const maxDuration = 60;

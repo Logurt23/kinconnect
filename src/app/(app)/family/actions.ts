@@ -2,7 +2,9 @@
 
 import { requireAdmin } from "@/lib/auth";
 import { back, ids, str } from "@/lib/actions";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { randomUUID } from "node:crypto";
+import { createAdminClient } from "@/lib/db";
+import { auth, sendPasswordEmail } from "@/lib/session";
 
 const P = "/family";
 
@@ -19,12 +21,17 @@ export async function inviteMember(f: FormData) {
   if (exists) back(P, { error: `${email} already has an account.` });
   const { error } = await db.from("invites").upsert({ email, display_name: name || null, role, circle_ids: circles, invited_by: me.id });
   if (error) back(P, { error: error.message });
-  const { error: mailError } = await db.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/update-password`,
-  });
-  if (mailError) {
+  // A sign-in account with no password yet, whose uid is a UUID like every other id here, then a profile
+  // and circles from the invite, then the "set your password" email.
+  const existing = await auth().getUserByEmail(email).catch(() => null);
+  const uid = existing?.uid ?? (await auth().createUser({ uid: randomUUID(), email }).catch(() => null))?.uid;
+  const profile = uid ? await db.rpc("create_profile_from_invite", { uid, mail: email }) : null;
+  const mail = uid && !profile?.error ? await sendPasswordEmail(email) : null;
+  if (!uid || profile?.error || mail?.error) {
     await db.from("invites").delete().eq("email", email);
-    back(P, { error: `Couldn't send the invite: ${mailError.message}` });
+    if (uid && !profile?.error) await db.from("profiles").delete().eq("id", uid);
+    if (uid && !existing) await auth().deleteUser(uid).catch(() => {});
+    back(P, { error: `Couldn't send the invite${mail?.error ? ` (${mail.error})` : ""}. Try again.` });
   }
   back(P, { ok: `Invite sent to ${email}.` });
 }
@@ -34,10 +41,13 @@ export async function cancelInvite(f: FormData) {
   const db = createAdminClient();
   const email = str(f, "email");
   const { data: invite } = await db.from("invites").delete().eq("email", email).select("user_id").maybeSingle();
-  // Remove the unconfirmed auth user too, so the link in their inbox stops working.
+  // Remove the account that never set a password, and its profile, so the link in their inbox stops working.
   if (invite?.user_id) {
-    const { data } = await db.auth.admin.getUserById(invite.user_id);
-    if (data.user && !data.user.last_sign_in_at) await db.auth.admin.deleteUser(invite.user_id);
+    const user = await auth().getUser(invite.user_id).catch(() => null);
+    if (user && !user.providerData.some((p) => p.providerId === "password")) {
+      await auth().deleteUser(invite.user_id);
+      await db.from("profiles").delete().eq("id", invite.user_id);
+    }
   }
   back(P, { ok: "Invite canceled." });
 }
@@ -63,8 +73,9 @@ export async function setActive(f: FormData) {
   if (id === me.id) back(P, { error: "You can't deactivate yourself." });
   const db = createAdminClient();
   await db.from("profiles").update({ active }).eq("id", id);
-  // Banning ends their sessions at the next token refresh; history stays in place.
-  await db.auth.admin.updateUserById(id, { ban_duration: active ? "none" : "876000h" });
+  // A disabled account can't sign in, and an inactive profile sees nothing; history stays in place.
+  await auth().updateUser(id, { disabled: !active });
+  if (!active) await auth().revokeRefreshTokens(id);
   back(P, { ok: active ? "Member reactivated." : "Member deactivated. Their history stays." });
 }
 

@@ -5,15 +5,14 @@ import { Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { requireMember } from "@/lib/auth";
 import { ALERT_LABEL } from "@/lib/alerts-labels";
 import { ago, dateLabel, dateTimeLabel, money, nextBirthday } from "@/lib/format";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/db";
 import { checkWeatherFor } from "@/lib/weather";
 
 export const metadata = { title: "Home" };
 
 export default async function HomePage() {
   const me = await requireMember();
-  const supabase = await createClient();
+  const db = await createClient();
   // A located member gets their NWS prompt even without the cron. The check runs after the response,
   // so Home never waits on weather.gov; a new prompt shows on the next visit (the cron covers the rest).
   // Request APIs aren't available inside after(), so it writes this member's prompts with the service key.
@@ -22,24 +21,24 @@ export default async function HomePage() {
   const now = new Date();
   const week = new Date(now.getTime() + 7 * 86400000);
   const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts] = await Promise.all([
-    supabase.from("alerts").select("id, kind, message, opened_at, sender:profiles!alerts_sender_id_fkey(display_name)")
+    db.from("alerts").select("id, kind, message, opened_at, sender:profiles!alerts_sender_id_fkey(display_name)")
       .is("closed_at", null).neq("kind", "notice").order("opened_at", { ascending: false }),
-    supabase.from("alerts").select("id, kind, message, opened_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
+    db.from("alerts").select("id, kind, message, opened_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
       .neq("sender_id", me.id).order("opened_at", { ascending: false }).limit(30),
-    supabase.from("alert_receipts").select("alert_id").eq("user_id", me.id),
-    supabase.from("reservations").select("id, status, starts_on, ends_on, listing:listings(id, title)")
+    db.from("alert_receipts").select("alert_id").eq("user_id", me.id),
+    db.from("reservations").select("id, status, starts_on, ends_on, listing:listings(id, title)")
       .eq("requester_id", me.id).in("status", ["pending", "confirmed"]),
-    supabase.from("reservations").select("id, starts_on, requester:profiles(display_name), listing:listings!inner(id, title, owner_id)")
+    db.from("reservations").select("id, starts_on, requester:profiles(display_name), listing:listings!inner(id, title, owner_id)")
       .eq("status", "pending").eq("listing.owner_id", me.id),
-    supabase.from("service_requests").select("id, needed_at, note, category:categories(name), requester:profiles!service_requests_requester_id_fkey(display_name)")
+    db.from("service_requests").select("id, needed_at, note, category:categories(name), requester:profiles!service_requests_requester_id_fkey(display_name)")
       .eq("claimed_by", me.id).eq("status", "claimed"),
-    supabase.from("ledger_entries").select("id, amount_cents, note, from_marked_paid, to:profiles!ledger_entries_to_id_fkey(display_name)")
+    db.from("ledger_entries").select("id, amount_cents, note, from_marked_paid, to:profiles!ledger_entries_to_id_fkey(display_name)")
       .eq("from_id", me.id).eq("status", "open"),
-    supabase.rpc("family_events", { from_ts: now.toISOString(), to_ts: week.toISOString() }),
-    supabase.from("profiles").select("id, display_name, birthday").eq("active", true).not("birthday", "is", null),
-    supabase.from("listings").select("id, title, offer_type, price_cents, loan_days, owner:profiles(display_name)")
+    db.rpc("family_events", { from_ts: now.toISOString(), to_ts: week.toISOString() }),
+    db.from("profiles").select("id, display_name, birthday").eq("active", true).not("birthday", "is", null),
+    db.from("listings").select("id, title, offer_type, price_cents, loan_days, owner:profiles(display_name)")
       .eq("status", "available").neq("owner_id", me.id).order("created_at", { ascending: false }).limit(8),
-    supabase.from("weather_prompts").select("nws_id, event, headline").eq("user_id", me.id).is("answered_alert_id", null)
+    db.from("weather_prompts").select("nws_id, event, headline").eq("user_id", me.id).is("answered_alert_id", null)
       .gt("expires_at", now.toISOString()),
   ]);
 

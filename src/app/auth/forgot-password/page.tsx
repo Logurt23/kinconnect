@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AuthCard } from "@/components/AuthCard";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
-import { createClient } from "@/lib/supabase/server";
+import { sendPasswordEmail } from "@/lib/session";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "Reset password" };
@@ -9,12 +9,8 @@ export const metadata = { title: "Reset password" };
 async function sendReset(form: FormData) {
   "use server";
   const email = String(form.get("email") ?? "").trim();
-  const supabase = await createClient();
-  // The email template links to /auth/confirm with a token hash; the same answer either way so
-  // nobody can probe which emails have accounts.
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/update-password`,
-  });
+  // The same answer either way, so nobody can probe which emails have accounts.
+  if (email.includes("@")) await sendPasswordEmail(email);
   redirect("/auth/forgot-password?sent=1");
 }
 

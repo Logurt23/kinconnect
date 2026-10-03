@@ -4,7 +4,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { CircleBadges, CirclePicker, Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { allCircles, defaultCircleIds, requireMember, shareableCircles } from "@/lib/auth";
 import { dateTimeLabel } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { act, openRequest } from "./actions";
 
 export const metadata = { title: "Requests" };
@@ -17,11 +17,11 @@ type Row = {
 
 export default async function RequestsPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data: categories }, circles, pick, { data }] = await Promise.all([
-    supabase.from("categories").select("id, name").eq("scope", "request").order("sort"),
+    db.from("categories").select("id, name").eq("scope", "request").order("sort"),
     allCircles(), shareableCircles(),
-    supabase.from("service_requests")
+    db.from("service_requests")
       .select("id, status, needed_at, where_text, note, circle_ids, requester_id, claimed_by, category:categories(name), requester:profiles!service_requests_requester_id_fkey(display_name), claimer:profiles!service_requests_claimed_by_fkey(display_name)")
       .order("created_at", { ascending: false }).limit(200),
   ]);

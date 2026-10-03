@@ -7,7 +7,7 @@ import { CircleBadges, PageHeader, Section } from "@/components/ui";
 import { allCircles, requireMember } from "@/lib/auth";
 import { UPDATE_LABEL } from "@/lib/alerts-labels";
 import { dateTimeLabel } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { closeAlert, markSeen, postUpdate } from "../actions";
 import { KindPill } from "@/components/KindPill";
 
@@ -19,16 +19,16 @@ const WEATHER_UPDATES = ["safe", "power_out", "hurt", "need_contact"] as const;
 export default async function AlertPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Search }) {
   const { id } = await params;
   const me = await requireMember();
-  const supabase = await createClient();
-  const { data: a } = await supabase.from("alerts")
+  const db = await createClient();
+  const { data: a } = await db.from("alerts")
     .select("*, sender:profiles!alerts_sender_id_fkey(display_name), closer:profiles!alerts_closed_by_fkey(display_name)")
     .eq("id", id).maybeSingle();
   if (!a) notFound();
   // Opening it marks it read.
-  if (a.sender_id !== me.id) await supabase.from("alert_receipts").upsert({ alert_id: id, user_id: me.id }, { onConflict: "alert_id,user_id", ignoreDuplicates: true });
+  if (a.sender_id !== me.id) await db.from("alert_receipts").upsert({ alert_id: id, user_id: me.id }, { onConflict: "alert_id,user_id", ignoreDuplicates: true });
   const [{ data: updates }, { data: seen }, circles] = await Promise.all([
-    supabase.from("alert_updates").select("id, kind, body, created_at, author:profiles(display_name)").eq("alert_id", id).order("created_at"),
-    supabase.from("alert_receipts").select("seen_at").eq("alert_id", id).eq("user_id", me.id).maybeSingle(),
+    db.from("alert_updates").select("id, kind, body, created_at, author:profiles(display_name)").eq("alert_id", id).order("created_at"),
+    db.from("alert_receipts").select("seen_at").eq("alert_id", id).eq("user_id", me.id).maybeSingle(),
     allCircles(),
   ]);
   const open = !a.closed_at;

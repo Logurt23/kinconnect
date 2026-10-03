@@ -2,7 +2,7 @@
 
 import { requireMember } from "@/lib/auth";
 import { back, ids, optStr, str } from "@/lib/actions";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 
 const KINDS = ["engagement", "new_baby", "move", "graduation", "new_job", "loss", "other"] as const;
 
@@ -14,8 +14,8 @@ export async function postMilestone(f: FormData) {
   if (link && !/^https?:\/\//i.test(link)) back("/dates", { error: "Links must start with http:// or https://" });
   const circles = ids(f);
   if (!circles.length) back("/dates", { error: "Pick who can see it." });
-  const supabase = await createClient();
-  const { error } = await supabase.from("milestones").insert({
+  const db = await createClient();
+  const { error } = await db.from("milestones").insert({
     subject_id: subject, posted_by: me.id, kind, title: str(f, "title") || kind.replace("_", " "),
     note: optStr(f, "note"), happened_on: str(f, "happened_on"), link_url: link, circle_ids: circles,
   });
@@ -24,7 +24,7 @@ export async function postMilestone(f: FormData) {
 
 export async function deleteMilestone(f: FormData) {
   await requireMember();
-  const supabase = await createClient();
-  await supabase.from("milestones").delete().eq("id", str(f, "id"));
+  const db = await createClient();
+  await db.from("milestones").delete().eq("id", str(f, "id"));
   back("/dates");
 }

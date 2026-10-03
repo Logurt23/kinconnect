@@ -2,7 +2,7 @@
 
 import { requireMember } from "@/lib/auth";
 import { back, ids, optStr, str } from "@/lib/actions";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 
 const KINDS = ["notice", "emergency_911", "emergency_family"] as const;
 
@@ -14,8 +14,8 @@ export async function sendAlert(f: FormData) {
   if (!message && kind === "emergency_911") message = "Emergency, call for help.";
   if (!message) back("/alerts", { error: "Write a short message." });
   if (circles.length === 0) back("/alerts", { error: "Pick who gets it." });
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("alerts").insert({
+  const db = await createClient();
+  const { data, error } = await db.from("alerts").insert({
     sender_id: me.id, kind, message: message.slice(0, 1000), circle_ids: circles,
     location_label: optStr(f, "location_label") ?? (kind === "notice" ? null : me.home_label),
     lat: kind === "notice" ? null : me.lat, lon: kind === "notice" ? null : me.lon,
@@ -31,12 +31,12 @@ export async function postUpdate(f: FormData) {
   const id = str(f, "alert_id");
   const kind = UPDATE_KINDS.find((k) => k === (str(f, "kind") || "note"));
   if (!kind) back(`/alerts/${id}`, { error: "Pick an update." });
-  const supabase = await createClient();
-  const { error } = await supabase.from("alert_updates").insert({ alert_id: id, author_id: me.id, kind, body: optStr(f, "body") });
+  const db = await createClient();
+  const { error } = await db.from("alert_updates").insert({ alert_id: id, author_id: me.id, kind, body: optStr(f, "body") });
   if (error) back(`/alerts/${id}`, { error: error.message });
   // A weather check-in closes when its sender reports they're safe.
   if (kind === "safe") {
-    await supabase.from("alerts").update({ closed_at: new Date().toISOString(), closed_by: me.id })
+    await db.from("alerts").update({ closed_at: new Date().toISOString(), closed_by: me.id })
       .eq("id", id).eq("kind", "weather_checkin").eq("sender_id", me.id).is("closed_at", null);
   }
   back(`/alerts/${id}`);
@@ -45,19 +45,19 @@ export async function postUpdate(f: FormData) {
 export async function markSeen(f: FormData) {
   const me = await requireMember();
   const id = str(f, "alert_id");
-  const supabase = await createClient();
-  await supabase.from("alert_receipts").upsert({ alert_id: id, user_id: me.id, seen_at: new Date().toISOString() });
+  const db = await createClient();
+  await db.from("alert_receipts").upsert({ alert_id: id, user_id: me.id, seen_at: new Date().toISOString() });
   back(`/alerts/${id}`);
 }
 
 export async function closeAlert(f: FormData) {
   const me = await requireMember();
   const id = str(f, "alert_id");
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("alerts").update({ closed_at: new Date().toISOString(), closed_by: me.id })
+  const db = await createClient();
+  const { data, error } = await db.from("alerts").update({ closed_at: new Date().toISOString(), closed_by: me.id })
     .eq("id", id).is("closed_at", null).select("id");
   if (error || !data?.length) back(`/alerts/${id}`, { error: "Only the sender or an admin can close this." });
-  await supabase.from("alert_updates").insert({ alert_id: id, author_id: me.id, kind: "resolved", body: "Closed" });
+  await db.from("alert_updates").insert({ alert_id: id, author_id: me.id, kind: "resolved", body: "Closed" });
   // A weather check-in that closes counts as answered.
   back(`/alerts/${id}`, { ok: "Closed." });
 }

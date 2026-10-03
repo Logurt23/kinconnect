@@ -1,16 +1,61 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { Storage } from "@google-cloud/storage";
+import { NextResponse } from "next/server";
 
 export const MAX_UPLOAD = 20 * 1024 * 1024;
 
-/** Short-lived links to private files. RLS on storage.objects decides who gets one. */
-export async function signedUrls(bucket: string, paths: string[], seconds = 60) {
-  if (!paths.length) return new Map<string, string>();
-  const supabase = await createClient();
-  const { data } = await supabase.storage.from(bucket).createSignedUrls(paths, seconds);
-  const map = new Map<string, string>();
-  for (const d of data ?? []) if (d.path && d.signedUrl) map.set(d.path, d.signedUrl);
-  return map;
+/**
+ * Files live in one private Cloud Storage bucket as <area>/<owner id>/..., written by the app's service
+ * account. Nobody gets a bucket URL: pages link to /files/<area>/<path>, which asks the database, as the
+ * member, whether they may read it (can_read_object) and then streams it. GCS_ENDPOINT points this at
+ * fake-gcs-server locally (not STORAGE_EMULATOR_HOST, which the library mixes up for downloads).
+ */
+export type Area = "vault" | "listing-photos" | "avatars";
+export const AREAS: Area[] = ["vault", "listing-photos", "avatars"];
+
+let storage: Storage | null = null;
+const bucket = () =>
+  (storage ??= new Storage(process.env.GCS_ENDPOINT ? { apiEndpoint: process.env.GCS_ENDPOINT, projectId: process.env.GOOGLE_CLOUD_PROJECT } : {})).bucket(process.env.GCS_BUCKET!);
+const object = (area: Area, path: string) => bucket().file(`${area}/${path}`);
+
+export async function putFile(area: Area, path: string, file: File, contentType: string) {
+  try {
+    await object(area, path).save(Buffer.from(await file.arrayBuffer()), { contentType, resumable: false });
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : "Upload failed.";
+  }
+}
+
+export async function removeFiles(area: Area, paths: string[]) {
+  await Promise.allSettled(paths.map((p) => object(area, p).delete({ ignoreNotFound: true })));
+}
+
+/** Where a page links to a file. The /files route decides who may open it. */
+export function fileUrl(area: Area, path: string) {
+  return `/files/${area}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+export function fileUrls(area: Area, paths: string[]) {
+  return new Map(paths.map((p) => [p, fileUrl(area, p)]));
+}
+
+/** The file itself, for a reader already allowed to see it. */
+export async function serveFile(area: Area, path: string) {
+  const f = object(area, path);
+  try {
+    const [[meta], [body]] = await Promise.all([f.getMetadata(), f.download()]);
+    return new NextResponse(new Uint8Array(body), {
+      headers: {
+        "Content-Type": meta.contentType || "application/octet-stream",
+        "Content-Length": String(body.length),
+        "Content-Disposition": "inline",
+        "Cache-Control": "private, max-age=300",
+      },
+    });
+  } catch {
+    return new NextResponse("Not found", { status: 404 });
+  }
 }
 
 export function safeName(name: string) {

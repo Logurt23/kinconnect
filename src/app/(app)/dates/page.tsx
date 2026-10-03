@@ -4,7 +4,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { CirclePicker, Empty, PageHeader, Section } from "@/components/ui";
 import { defaultCircleIds, requireMember, shareableCircles } from "@/lib/auth";
 import { dateLabel, nextBirthday } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { deleteMilestone, postMilestone } from "./actions";
 
 export const metadata = { title: "Dates" };
@@ -18,10 +18,10 @@ export default async function DatesPage({ searchParams }: { searchParams: Search
   const me = await requireMember();
   const q = await searchParams;
   const year = Number(q.year) || new Date().getFullYear();
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data: people }, { data: milestones }, circles] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, birthday").eq("active", true).order("display_name"),
-    supabase.from("milestones").select("id, kind, title, note, happened_on, link_url, posted_by, subject:profiles!milestones_subject_id_fkey(display_name)")
+    db.from("profiles").select("id, display_name, birthday").eq("active", true).order("display_name"),
+    db.from("milestones").select("id, kind, title, note, happened_on, link_url, posted_by, subject:profiles!milestones_subject_id_fkey(display_name)")
       .order("happened_on", { ascending: false }),
     shareableCircles(),
   ]);

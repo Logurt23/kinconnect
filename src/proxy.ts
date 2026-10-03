@@ -1,20 +1,20 @@
-import { updateSession } from "@/lib/supabase/proxy";
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  return await updateSession(request);
+/**
+ * Sends visitors without a session cookie to /login. The cookie is verified (and the member's profile
+ * checked) by requireMember and the route handlers, so this is only the cheap first gate.
+ */
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const open = pathname === "/login" || pathname.startsWith("/auth") || pathname.startsWith("/api/cron");
+  if (open || request.cookies.has("kc_session")) return NextResponse.next();
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = "";
+  return NextResponse.redirect(url);
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
-     * Feel free to modify this pattern to include more paths.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  // Everything but static assets and images.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

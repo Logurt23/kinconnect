@@ -1,7 +1,8 @@
 -- KinConnect schema. Every table has row level security. Shared rows carry circle_ids and are visible
--- to members whose circles overlap; see my_circle_ids().
+-- to members whose circles overlap; see my_circle_ids(). Runs after 00_platform.sql. Everything is
+-- created as service_role, which therefore owns it and is the only role RLS doesn't apply to.
 
-create extension if not exists pgcrypto;
+set role service_role;
 
 -- ---------- enums ----------
 create type member_role as enum ('admin', 'member');
@@ -22,7 +23,7 @@ create type ledger_status as enum ('open', 'paid', 'canceled');
 
 -- ---------- people and circles ----------
 create table profiles (
-  id uuid primary key references auth.users on delete cascade,
+  id uuid primary key, -- the Identity Platform uid, created as a UUID
   email text not null unique,
   display_name text not null,
   photo_path text,
@@ -57,7 +58,7 @@ create table invites (
   role member_role not null default 'member',
   circle_ids uuid[] not null default '{}',
   invited_by uuid references profiles,
-  user_id uuid, -- the pending auth user, so a cancel can remove it directly
+  user_id uuid, -- the pending sign-in account, so a cancel can remove it directly
   created_at timestamptz not null default now()
 );
 
@@ -76,24 +77,23 @@ create function my_circle_ids() returns uuid[] language sql stable security defi
   from circle_members where user_id = auth.uid()
 $$;
 
--- New auth users get a profile and circles from their invite. No invite: an inactive profile.
-create function handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$
+-- The invite action creates the sign-in account, then this gives it a profile and circles from the
+-- invite. No invite: an inactive profile. Only the app's service role may call it.
+create function create_profile_from_invite(uid uuid, mail text) returns void language plpgsql security definer set search_path = public as $$
 declare inv invites;
 begin
-  select * into inv from invites where lower(email) = lower(new.email);
+  select * into inv from invites where lower(email) = lower(mail);
   insert into profiles (id, email, display_name, role, active)
-  values (new.id, new.email, coalesce(inv.display_name, split_part(new.email, '@', 1)),
+  values (uid, mail, coalesce(inv.display_name, split_part(mail, '@', 1)),
           coalesce(inv.role, 'member'), inv.email is not null);
   if inv.email is not null then
     insert into circle_members (circle_id, user_id)
-    select unnest(inv.circle_ids), new.id on conflict do nothing;
-    -- The invite stays listed as pending (and cancelable) until the link is used; /auth/confirm clears it.
-    update invites set user_id = new.id where email = inv.email;
+    select unnest(inv.circle_ids), uid on conflict do nothing;
+    -- The invite stays listed as pending (and cancelable) until the link is used; /auth/update-password clears it.
+    update invites set user_id = uid where email = inv.email;
   end if;
-  return new;
 end $$;
-create trigger on_auth_user_created after insert on auth.users
-  for each row execute function handle_new_user();
+revoke execute on function create_profile_from_invite(uuid, text) from public;
 
 alter table profiles enable row level security;
 alter table circles enable row level security;
@@ -102,7 +102,7 @@ alter table invites enable row level security;
 
 create policy "members read profiles" on profiles for select using (is_active());
 create policy "self updates profile" on profiles for update using (id = auth.uid()) with check (id = auth.uid());
--- Role and active are changed by admin actions with the service key only.
+-- Role and active are changed by admin actions with the service role only.
 revoke update on profiles from authenticated, anon;
 grant update (display_name, photo_path, birthday, home_label, lat, lon) on profiles to authenticated;
 
@@ -351,7 +351,7 @@ create function owns_source(s uuid) returns boolean language sql stable security
 $$;
 
 alter table calendar_sources enable row level security;
-alter table google_tokens enable row level security; -- no policies: service key only
+alter table google_tokens enable row level security; -- no policies: service role only
 alter table calendar_events enable row level security;
 create policy "own sources" on calendar_sources for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 create policy "own events" on calendar_events for all using (owns_source(source_id)) with check (owns_source(source_id));
@@ -534,14 +534,9 @@ create policy "owner manages shares" on vault_shares for all using (owns_vault_i
 create policy "grantee sees share" on vault_shares for select
   using (user_id = auth.uid() or circle_id = any (my_circle_ids()));
 
--- ---------- storage ----------
--- Size and type limits are enforced here as well as in the server actions.
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values
-  ('vault', 'vault', false, 20971520, array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']),
-  ('listing-photos', 'listing-photos', false, 20971520, array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif']),
-  ('avatars', 'avatars', false, 20971520, array['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif'])
-on conflict (id) do nothing;
-
+-- ---------- files ----------
+-- Files live in Cloud Storage under <area>/<owner id>/...; the app uploads them into the member's own
+-- folder and serves each read through /files after asking this function, as the member, whether they may.
 create function can_read_object(bucket text, object_name text) returns boolean
 language sql stable security definer set search_path = public as $$
   select case bucket
@@ -553,18 +548,13 @@ language sql stable security definer set search_path = public as $$
     else false end
 $$;
 
-create policy "upload to own folder" on storage.objects for insert to authenticated
-  with check (bucket_id in ('vault', 'listing-photos', 'avatars') and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "update own folder" on storage.objects for update to authenticated
-  using (bucket_id in ('vault', 'listing-photos', 'avatars') and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "delete own folder" on storage.objects for delete to authenticated
-  using (bucket_id in ('vault', 'listing-photos', 'avatars') and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "read own or allowed" on storage.objects for select to authenticated
-  using (bucket_id in ('vault', 'listing-photos', 'avatars')
-    and ((storage.foldername(name))[1] = auth.uid()::text or can_read_object(bucket_id, name)));
-
--- ---------- realtime ----------
-alter publication supabase_realtime add table alerts, alert_updates;
+-- ---------- live refresh ----------
+-- Changes whenever an alert I can see opens or closes, or one gets an update. Pages poll it to refresh.
+create function live_stamp() returns text language sql stable security invoker set search_path = public as $$
+  select concat_ws('|',
+    (select count(*) || ':' || coalesce(max(greatest(opened_at, coalesce(closed_at, opened_at)))::text, '') from alerts),
+    (select count(*) || ':' || coalesce(max(created_at)::text, '') from alert_updates))
+$$;
 
 -- ---------- seed data every install needs ----------
 insert into circles (name, kind, color) values ('Core', 'core', '#2f6b4f'), ('Extended', 'extended', '#8a5a2b');
@@ -583,3 +573,5 @@ create function unread_alert_count() returns integer language sql stable securit
     and not exists (select 1 from alert_receipts r where r.alert_id = a.id and r.user_id = auth.uid())
 $$;
 grant execute on function unread_alert_count() to authenticated;
+
+reset role;

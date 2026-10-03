@@ -5,7 +5,7 @@ import { Flash, type Search } from "@/components/Flash";
 import { Empty, PageHeader, Section } from "@/components/ui";
 import { requireMember } from "@/lib/auth";
 import { ago, dateTimeLabel } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/db";
 import { checkWeatherFor, isSevere } from "@/lib/weather";
 import { checkIn } from "./actions";
 
@@ -14,13 +14,13 @@ export const metadata = { title: "Weather" };
 export default async function WeatherPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
   const alerts = await checkWeatherFor(me);
-  const supabase = await createClient();
+  const db = await createClient();
   const [{ data: prompts }, { data: checkins }, { data: unlocated }] = await Promise.all([
-    supabase.from("weather_prompts").select("nws_id, event, severity, headline, expires_at").eq("user_id", me.id).is("answered_alert_id", null)
+    db.from("weather_prompts").select("nws_id, event, severity, headline, expires_at").eq("user_id", me.id).is("answered_alert_id", null)
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`),
-    supabase.from("alerts").select("id, message, opened_at, closed_at, sender:profiles!alerts_sender_id_fkey(display_name)")
+    db.from("alerts").select("id, message, opened_at, closed_at, sender:profiles!alerts_sender_id_fkey(display_name)")
       .eq("kind", "weather_checkin").order("opened_at", { ascending: false }).limit(20),
-    supabase.from("profiles").select("display_name").eq("active", true).is("lat", null),
+    db.from("profiles").select("display_name").eq("active", true).is("lat", null),
   ]);
 
   return (

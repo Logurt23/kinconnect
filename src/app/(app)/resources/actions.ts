@@ -4,8 +4,8 @@ import { randomUUID } from "node:crypto";
 import { requireMember } from "@/lib/auth";
 import { back, ids, optStr, str } from "@/lib/actions";
 import { toCents } from "@/lib/format";
-import { IMAGE_TYPES, MAX_UPLOAD, safeName, sniffType } from "@/lib/storage";
-import { createClient } from "@/lib/supabase/server";
+import { IMAGE_TYPES, MAX_UPLOAD, putFile, safeName, sniffType } from "@/lib/storage";
+import { createClient } from "@/lib/db";
 
 export async function createListing(f: FormData) {
   const me = await requireMember();
@@ -19,8 +19,8 @@ export async function createListing(f: FormData) {
   const price = toCents(f.get("price"));
   if (offer === "loan" && !loanDays) back(P, { error: "Set how many days the loan lasts." });
   if (offer === "sell" && price == null) back(P, { error: "Set a price." });
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("listings").insert({
+  const db = await createClient();
+  const { data, error } = await db.from("listings").insert({
     owner_id: me.id, title, description: optStr(f, "description"), category_id: optStr(f, "category_id"),
     circle_ids: circles, offer_type: offer, loan_days: offer === "loan" ? loanDays : null,
     price_cents: offer === "sell" ? price : null, quantity: Math.max(1, Number(str(f, "quantity")) || 1),
@@ -32,8 +32,7 @@ export async function createListing(f: FormData) {
     const type = photo.size <= MAX_UPLOAD ? await sniffType(photo) : null;
     if (!type || !IMAGE_TYPES.includes(type)) continue;
     const path = `${me.id}/${data.id}/${randomUUID()}-${safeName(photo.name)}`;
-    const up = await supabase.storage.from("listing-photos").upload(path, photo, { contentType: type });
-    if (!up.error) await supabase.from("listing_photos").insert({ listing_id: data.id, path, sort: i });
+    if (!(await putFile("listing-photos", path, photo, type))) await db.from("listing_photos").insert({ listing_id: data.id, path, sort: i });
   }
   back(`/resources/${data.id}`, { ok: "Listed." });
 }
@@ -44,10 +43,10 @@ export async function reserve(f: FormData) {
   const P = `/resources/${listing}`;
   const starts = str(f, "starts_on");
   if (!starts) back(P, { error: "Pick a start date." });
-  const supabase = await createClient();
-  const { data: l } = await supabase.from("listings").select("status, owner_id").eq("id", listing).single();
+  const db = await createClient();
+  const { data: l } = await db.from("listings").select("status, owner_id").eq("id", listing).single();
   if (!l || l.status !== "available") back(P, { error: "That listing isn't available right now." });
-  const { error } = await supabase.from("reservations").insert({
+  const { error } = await db.from("reservations").insert({
     listing_id: listing, requester_id: me.id, starts_on: starts, ends_on: optStr(f, "ends_on"), note: optStr(f, "note"),
   });
   back(P, error ? { error: error.message } : { ok: "Reservation requested. The owner will confirm or decline." });
@@ -59,14 +58,14 @@ export async function decide(f: FormData) {
   const id = str(f, "reservation_id");
   const listing = str(f, "listing_id");
   const to = str(f, "to");
-  const supabase = await createClient();
+  const db = await createClient();
   const now = new Date().toISOString();
   const status = { confirm: "confirmed", decline: "declined", returned: "returned", cancel: "canceled", out: "confirmed" }[to];
   if (!status) back(`/resources/${listing}`);
-  const { error } = await supabase.from("reservations").update({ status, decided_at: now }).eq("id", id);
+  const { error } = await db.from("reservations").update({ status, decided_at: now }).eq("id", id);
   if (error) back(`/resources/${listing}`, { error: error.message });
   const listingStatus = { confirm: "reserved", out: "out", returned: "available" }[to as "confirm" | "out" | "returned"];
-  if (listingStatus) await supabase.from("listings").update({ status: listingStatus }).eq("id", listing);
+  if (listingStatus) await db.from("listings").update({ status: listingStatus }).eq("id", listing);
   back(`/resources/${listing}`);
 }
 
@@ -74,7 +73,7 @@ export async function setListingStatus(f: FormData) {
   await requireMember();
   const id = str(f, "listing_id");
   const status = (["available", "reserved", "out", "closed"] as const).find((s) => s === str(f, "status"));
-  const supabase = await createClient();
-  const { error } = await supabase.from("listings").update({ status }).eq("id", id);
+  const db = await createClient();
+  const { error } = await db.from("listings").update({ status }).eq("id", id);
   back(`/resources/${id}`, error ? { error: error.message } : {});
 }

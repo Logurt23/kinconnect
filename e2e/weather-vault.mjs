@@ -15,11 +15,10 @@ await admin.goto(base + "/weather"); console.log("prompt gone:", await admin.loc
 await ava.goto(base + "/vault"); await ava.setInputFiles("#file", "e2e/drill.jpg"); await ava.fill("#title", "Insurance card"); await ava.click("text=Upload privately"); await ava.waitForSelector('text=Uploaded.');
 console.log("vault:", await flash(ava));
 const openHref = await ava.locator("a:has-text('Insurance card')").first().getAttribute("href");
-const own = await ava.request.get(base + openHref, { maxRedirects: 0 }); console.log("owner open:", own.status(), (own.headers().location || "").includes("token="));
+const own = await ava.request.get(base + openHref, { maxRedirects: 0 }); console.log("owner open:", own.status(), own.headers()["content-type"]);
 console.log("admin before share:", (await admin.request.get(base + openHref, { maxRedirects: 0 })).status());
 await ava.selectOption("select[name=target]", { label: "Logan" }); await ava.click("button:has-text('Share')"); await ava.waitForSelector('text=Shared.');
 const after = await admin.request.get(base + openHref, { maxRedirects: 0 }); console.log("admin after share:", after.status());
-const img = await admin.request.get(after.headers().location); console.log("signed fetch:", img.status(), img.headers()["content-type"]);
 await admin.goto(base + "/vault"); console.log("admin shared list:", await admin.locator("section:has-text('Shared with me') li").allInnerTexts());
 console.log("uncle:", (await uncle.request.get(base + openHref, { maxRedirects: 0 })).status());
 await ava.goto(base + "/vault"); await ava.click("button[aria-label='Remove access']"); await ava.waitForSelector('text=Access removed.');

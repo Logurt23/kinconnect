@@ -1,14 +1,13 @@
-import { browser, signIn, inviteLink, flash, base } from "./lib.mjs";
+import { browser, signIn, inviteLink, mailCount, base } from "./lib.mjs";
 const b = await browser();
 // Password reset by email
 const ctx = await b.newContext(); const p = await ctx.newPage();
+const before = await mailCount("ava@kinconnect.local");
 await p.goto(base + "/auth/forgot-password"); await p.fill("#email", "ava@kinconnect.local"); await p.click("button[type=submit]"); await p.waitForSelector("text=reset link is on its way");
-await new Promise((r) => setTimeout(r, 1500));
-const list = await (await fetch("http://127.0.0.1:54324/api/v1/search?query=" + encodeURIComponent('to:ava@kinconnect.local subject:"Reset"'))).json();
-const m = await (await fetch("http://127.0.0.1:54324/api/v1/message/" + list.messages[0].ID)).json();
-const link = m.HTML.match(/href="([^"]+)"/)[1].replace(/&amp;/g, "&");
+const link = await inviteLink("ava@kinconnect.local", before);
 await p.goto(link); await p.waitForURL(/update-password/); await p.fill("#password", "family-pass-2"); await p.fill("#confirm", "family-pass-2"); await p.click("button[type=submit]"); await p.waitForURL(base + "/");
 console.log("reset ok:", await p.locator("h1").textContent());
+const p5 = await ctx.newPage(); await p5.goto(link); console.log("used reset link refused", /auth\/error/.test(p5.url()));
 await ctx.close();
 await signIn(b, "ava@kinconnect.local", "family-pass-2").then(() => console.log("ava signs in with new password"));
 // Deactivate uncle
@@ -16,7 +15,7 @@ const admin = await signIn(b, "admin@kinconnect.local", "kinconnect-admin-1");
 const uncle = await signIn(b, "uncle@kinconnect.local", "family-pass-1");
 await admin.goto(base + "/family"); admin.once("dialog", (d) => d.accept());
 await admin.locator("li:has-text('Uncle Ray') button:has-text('Deactivate')").click(); await admin.waitForSelector("text=Member deactivated");
-const r = await uncle.goto(base + "/"); console.log("uncle after deactivate lands on:", uncle.url().replace(base, ""));
+await uncle.goto(base + "/"); console.log("uncle after deactivate lands on:", uncle.url().replace(base, ""));
 const c2 = await b.newContext(); const p2 = await c2.newPage(); await p2.goto(base + "/login"); await p2.fill("#email", "uncle@kinconnect.local"); await p2.fill("#password", "family-pass-1"); await p2.click("button[type=submit]");
 await p2.waitForTimeout(1500); console.log("uncle sign-in:", await p2.locator("p[role=alert]").textContent());
 await admin.locator("li:has-text('Uncle Ray') button:has-text('Reactivate')").click(); await admin.waitForSelector("text=Member reactivated");
