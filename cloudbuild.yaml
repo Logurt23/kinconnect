@@ -1,0 +1,25 @@
+# gcloud builds submit --region REGION --config cloudbuild.yaml --substitutions _REGION=...,_SITE_URL=https://...
+# Builds the app image and copies the pinned PostgREST image into the same Artifact Registry repository,
+# so Cloud Run pulls both from the project.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/kinconnect/app
+      - --build-arg
+      - NEXT_PUBLIC_SITE_URL=${_SITE_URL}
+      - .
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker pull docker.io/postgrest/postgrest:${_POSTGREST_VERSION} &&
+        docker tag docker.io/postgrest/postgrest:${_POSTGREST_VERSION} ${_REGION}-docker.pkg.dev/$PROJECT_ID/kinconnect/postgrest:${_POSTGREST_VERSION} &&
+        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/kinconnect/postgrest:${_POSTGREST_VERSION}
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/kinconnect/app
+substitutions:
+  _REGION: us-central1
+  _POSTGREST_VERSION: v16.4

@@ -1,0 +1,74 @@
+# KinConnect on Cloud Run: the app (ingress) plus two sidecars on localhost.
+#   app             Next.js on :8080. Signs a short JWT per request and calls PostgREST on :3001.
+#   postgrest       PostgREST on 127.0.0.1:3001; logs in to Postgres as `authenticator`.
+#   cloud-sql-proxy Cloud SQL Auth Proxy on 127.0.0.1:5432, using the service account's IAM.
+# Fill in __PROJECT__, __REGION__ and __SITE__ (README, Deploy step 6), then `gcloud run services replace`.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: kinconnect
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "3"
+        run.googleapis.com/container-dependencies: '{"app":["postgrest"],"postgrest":["cloud-sql-proxy"]}'
+    spec:
+      serviceAccountName: kinconnect-run@__PROJECT__.iam.gserviceaccount.com
+      containers:
+        - name: app
+          image: __REGION__-docker.pkg.dev/__PROJECT__/kinconnect/app
+          ports:
+            - containerPort: 8080
+          resources:
+            limits: { cpu: "1", memory: 512Mi }
+          env:
+            - { name: NEXT_PUBLIC_SITE_URL, value: __SITE__ }
+            - { name: POSTGREST_URL, value: "http://127.0.0.1:3001" }
+            - { name: GOOGLE_CLOUD_PROJECT, value: __PROJECT__ }
+            - { name: GCS_BUCKET, value: __PROJECT__-kinconnect-files }
+            - { name: APP_TIMEZONE, value: America/Chicago }
+            - { name: NWS_USER_AGENT, value: "KinConnect family app (you@example.com)" }
+            - { name: GOOGLE_CLIENT_ID, value: "" }
+            - name: PGRST_JWT_SECRET
+              valueFrom: { secretKeyRef: { name: PGRST_JWT_SECRET, key: latest } }
+            - name: IDENTITY_PLATFORM_API_KEY
+              valueFrom: { secretKeyRef: { name: IDENTITY_PLATFORM_API_KEY, key: latest } }
+            - name: TOKEN_ENCRYPTION_KEY
+              valueFrom: { secretKeyRef: { name: TOKEN_ENCRYPTION_KEY, key: latest } }
+            - name: CRON_SECRET
+              valueFrom: { secretKeyRef: { name: CRON_SECRET, key: latest } }
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom: { secretKeyRef: { name: GOOGLE_CLIENT_SECRET, key: latest } }
+        - name: postgrest
+          image: __REGION__-docker.pkg.dev/__PROJECT__/kinconnect/postgrest:v16.4
+          resources:
+            limits: { cpu: 500m, memory: 256Mi }
+          env:
+            - { name: PGRST_SERVER_HOST, value: 127.0.0.1 }
+            - { name: PGRST_SERVER_PORT, value: "3001" }
+            - { name: PGRST_ADMIN_SERVER_PORT, value: "3002" }
+            - { name: PGRST_ADMIN_SERVER_HOST, value: 0.0.0.0 } # /ready for the startup probe; not routed
+            - { name: PGRST_DB_SCHEMAS, value: public }
+            - { name: PGRST_DB_ANON_ROLE, value: anon }
+            - { name: PGRST_DB_POOL, value: "5" }
+            - { name: PGRST_OPENAPI_MODE, value: disabled }
+            - name: PGRST_DB_URI # postgres://authenticator:PASSWORD@127.0.0.1:5432/kinconnect
+              valueFrom: { secretKeyRef: { name: PGRST_DB_URI, key: latest } }
+            - name: PGRST_JWT_SECRET
+              valueFrom: { secretKeyRef: { name: PGRST_JWT_SECRET, key: latest } }
+          startupProbe:
+            httpGet: { path: /ready, port: 3002 }
+            periodSeconds: 2
+            failureThreshold: 30
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.26.0
+          args: ["--port=5432", "--health-check", "--http-address=0.0.0.0", "--http-port=9090", "__PROJECT__:__REGION__:kinconnect"]
+          resources:
+            limits: { cpu: 500m, memory: 256Mi }
+          startupProbe:
+            httpGet: { path: /startup, port: 9090 }
+            periodSeconds: 2
+            failureThreshold: 30
