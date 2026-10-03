@@ -3,10 +3,11 @@ import { after } from "next/server";
 import { AlertTriangle, CloudLightning, Home as HomeIcon, Siren, Tornado } from "lucide-react";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { Flash, type Search } from "@/components/Flash";
+import { PollCard, isOpen, loadPolls } from "@/components/PollCard";
 import { StatusBoard } from "@/components/StatusBoard";
 import { Empty, PageHeader, Section, StatusPill } from "@/components/ui";
 import { checkIn } from "./weather/actions";
-import { requireMember } from "@/lib/auth";
+import { allCircles, requireMember } from "@/lib/auth";
 import { ALERT_LABEL } from "@/lib/alerts-labels";
 import { ago, dateLabel, dateTimeLabel, money, nextBirthday } from "@/lib/format";
 import { createAdminClient, createClient } from "@/lib/db";
@@ -25,7 +26,7 @@ export default async function HomePage({ searchParams }: { searchParams: Search 
   const now = new Date();
   const week = new Date(now.getTime() + 7 * 86400000);
   const dayAgo = new Date(now.getTime() - 86400000);
-  const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts, checkins] = await Promise.all([
+  const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts, checkins, polls, circles] = await Promise.all([
     db.from("alerts").select("id, kind, message, opened_at, sender:profiles!alerts_sender_id_fkey(display_name)")
       .is("closed_at", null).neq("kind", "notice").order("opened_at", { ascending: false }),
     db.from("alerts").select("id, kind, message, opened_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
@@ -47,7 +48,11 @@ export default async function HomePage({ searchParams }: { searchParams: Search 
       .or(`expires_at.is.null,expires_at.gt.${now.toISOString()}`),
     db.from("alerts").select("id, message, opened_at, closed_at, sender:profiles!alerts_sender_id_fkey(display_name)")
       .eq("kind", "weather_checkin").gt("opened_at", dayAgo.toISOString()).order("opened_at", { ascending: false }),
+    loadPolls(db, 20),
+    allCircles(),
   ]);
+  // Open polls from someone else that I haven't answered yet.
+  const pollsForMe = polls.filter((p) => isOpen(p) && p.author_id !== me.id && !p.votes.some((v) => v.user_id === me.id));
 
   // Storm mode: a tornado warning or watch at my home base, or someone in my circles still checked in
   // as not safe. Check-ins, status and weather then come first and the everyday sections drop below.
@@ -127,6 +132,14 @@ export default async function HomePage({ searchParams }: { searchParams: Search 
           </Link>
         );
       })}
+
+      {pollsForMe.length > 0 && (
+        <Section title="Polls waiting on you" action={<Link href="/polls" className="text-xs font-semibold text-brand">All polls</Link>}>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {pollsForMe.slice(0, 4).map((p) => <PollCard key={p.id} poll={p} meId={me.id} circles={circles} from="/" />)}
+          </div>
+        </Section>
+      )}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Section title="Unread alerts" action={<Link href="/alerts" className="text-xs font-semibold text-brand">All alerts</Link>}>

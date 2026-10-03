@@ -1,7 +1,7 @@
 // Screenshots of every screen at phone and desktop width, for design review. Run after the other tests.
 import { browser, base } from "./lib.mjs";
 const b = await browser();
-const routes = ["/", "/alerts", "/resources", "/requests", "/schedule", "/dates", "/lists", "/ledger", "/weather", "/vault", "/family", "/settings"];
+const routes = ["/", "/alerts", "/resources", "/requests", "/polls", "/schedule", "/dates", "/lists", "/ledger", "/weather", "/vault", "/family", "/settings"];
 for (const [tag, viewport] of [["phone", { width: 390, height: 844 }], ["desktop", { width: 1360, height: 900 }]]) {
   const ctx = await b.newContext({ viewport, deviceScaleFactor: tag === "phone" ? 2 : 1 });
   const p = await ctx.newPage();

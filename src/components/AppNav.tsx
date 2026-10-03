@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import {
   BellRing, Boxes, CalendarDays, Cake, CloudLightning, Gift, HandHelping, Home, LayoutGrid, Lock, LogOut,
-  Settings, Users, Wallet, type LucideIcon,
+  Settings, Users, Vote, Wallet, type LucideIcon,
 } from "lucide-react";
 import { Mark, Wordmark } from "./Wordmark";
 import { initials } from "@/lib/format";
@@ -18,6 +18,7 @@ const NAV: Item[] = [
   { href: "/alerts", label: "Alerts", icon: BellRing },
   { href: "/resources", label: "Resources", icon: Boxes },
   { href: "/requests", label: "Requests", icon: HandHelping },
+  { href: "/polls", label: "Polls", icon: Vote },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/dates", label: "Dates", icon: Cake },
   { href: "/lists", label: "Lists", icon: Gift },

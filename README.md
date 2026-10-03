@@ -1,7 +1,7 @@
 # KinConnect
 
 Private family web app: one URL, invite-only sign in, a dashboard, and a left menu with Home, Alerts,
-Resources, Requests, Schedule, Dates, Lists, Ledger, Weather, Vault, Family and Settings.
+Resources, Requests, Polls, Schedule, Dates, Lists, Ledger, Weather, Vault, Family and Settings.
 
 Built on Next.js 16 (App Router) and Google Cloud only:
 
@@ -190,6 +190,9 @@ background work is slowed, which is fine because the 15-minute sweep is the main
   share a circle with that member and have it on themselves. SOS asks first, then sends a family
   emergency to the member's circles; setting Safe closes it. Statuses are set by tapping: a website
   can't follow anyone's location in the background.
+- Polls go to circles the way alerts do (your own circles; admins may add any). Only those circles see
+  them. One answer each, changeable until the poll closes; a database trigger checks the answer belongs to
+  the poll, and RLS refuses votes on a closed poll.
 - A tornado warning or watch at a member's home base (or an open family weather check-in) puts Home in
   storm mode: check-ins, status and weather come first.
 - Sign-up is off in Identity Platform; accounts are made by the invite action. Deactivating a member
