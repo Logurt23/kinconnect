@@ -32,7 +32,9 @@ export async function alertsAt(lat: number, lon: number): Promise<NwsAlert[] | n
   }
 }
 
-export const isSevere = (a: NwsAlert) => a.severity === "Severe" || a.severity === "Extreme";
+/** Tornado warnings and watches switch the dashboard into storm mode, whatever their NWS severity. */
+export const isTornado = (event: string) => /tornado (warning|watch)/i.test(event);
+export const isSevere = (a: NwsAlert) => a.severity === "Severe" || a.severity === "Extreme" || isTornado(a.event);
 
 /** Records a check-in prompt for each Severe or Extreme alert covering the member's point. */
 export async function recordPrompts(db: Db, userId: string, lat: number, lon: number) {

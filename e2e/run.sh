@@ -10,7 +10,7 @@ mkdir -p e2e/out
 curl -s -X POST http://127.0.0.1:4443/storage/v1/b -H "Content-Type: application/json" -d '{"name":"kinconnect-files"}' >/dev/null
 curl -s -X DELETE http://127.0.0.1:9099/emulator/v1/projects/demo-kinconnect/accounts >/dev/null
 npm run -s db:reset >/dev/null && npm run -s bootstrap-admin
-for t in family alerts resources mid weather-vault schedule misc hardening live; do
+for t in family alerts resources mid weather-vault schedule misc hardening live status-vault; do
   echo "=== $t"
   node "e2e/$t.mjs"
 done

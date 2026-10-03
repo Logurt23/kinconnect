@@ -29,11 +29,11 @@ console.log("requester move refused", Boolean(moved.error));
 const cancel = await sb.from("reservations").update({ status: "canceled" }).eq("id", mine.id).select("status").single();
 console.log("requester cancel allowed", cancel.data?.status === "canceled");
 
-// Uploads are typed by their bytes: a text file claiming to be a PNG is refused.
+// The vault takes text files only, judged by their bytes: a photo is refused whatever it's called.
 const b = await browser();
 const ava = await signIn(b, "ava@kinconnect.local", "family-pass-2");
 await ava.goto(base + "/vault");
-await ava.setInputFiles("#file", { name: "fake.png", mimeType: "image/png", buffer: Buffer.from("<html><script>alert(1)</script></html>") });
+await ava.setInputFiles("#file", { name: "notes.txt", mimeType: "text/plain", buffer: await import("node:fs").then((fs) => fs.readFileSync("e2e/drill.jpg")) });
 await ava.click("text=Upload privately"); await ava.waitForLoadState("networkidle");
 console.log("spoofed upload:", await flash(ava));
 const csp = [];

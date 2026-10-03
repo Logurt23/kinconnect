@@ -12,7 +12,7 @@ await ava.goto(base + "/"); console.log("ava pinned:", await ava.locator("main a
 await admin.goto(checkinUrl); await admin.click("button[value=safe]"); await admin.waitForLoadState("networkidle");
 await ava.goto(base + "/"); console.log("ava pinned after safe:", await ava.locator("main a.border-2").allInnerTexts());
 await admin.goto(base + "/weather"); console.log("prompt gone:", await admin.locator("form:has(button[value=hurt])").count() === 0);
-await ava.goto(base + "/vault"); await ava.setInputFiles("#file", "e2e/drill.jpg"); await ava.fill("#title", "Insurance card"); await ava.click("text=Upload privately"); await ava.waitForSelector('text=Uploaded.');
+await ava.goto(base + "/vault"); await ava.setInputFiles("#file", { name: "insurance.txt", mimeType: "text/plain", buffer: Buffer.from("Policy 12345\nGroup 678\n") }); await ava.fill("#title", "Insurance card"); await ava.click("text=Upload privately"); await ava.waitForSelector('text=Uploaded.');
 console.log("vault:", await flash(ava));
 const openHref = await ava.locator("a:has-text('Insurance card')").first().getAttribute("href");
 const own = await ava.request.get(base + openHref, { maxRedirects: 0 }); console.log("owner open:", own.status(), own.headers()["content-type"]);

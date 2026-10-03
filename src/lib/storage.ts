@@ -62,6 +62,22 @@ export function safeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "").slice(-60) || "file";
 }
 
+/** Vault: 1 GB per member, plain text only (notes, backups, CSV, JSON, Markdown and the like). */
+export const VAULT_QUOTA = 1024 ** 3;
+export const TEXT_TYPE = "text/plain; charset=utf-8";
+
+/** True when every byte is valid UTF-8 text with no NULs, so images, video, PDFs and Office files are refused. */
+export async function isPlainText(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.includes(0)) return false;
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/heic", "image/heif"];
 
 /**

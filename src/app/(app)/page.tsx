@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { after } from "next/server";
-import { AlertTriangle, CloudLightning, Home as HomeIcon, Siren } from "lucide-react";
+import { AlertTriangle, CloudLightning, Home as HomeIcon, Siren, Tornado } from "lucide-react";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { Flash, type Search } from "@/components/Flash";
+import { StatusBoard } from "@/components/StatusBoard";
 import { Empty, PageHeader, Section, StatusPill } from "@/components/ui";
+import { checkIn } from "./weather/actions";
 import { requireMember } from "@/lib/auth";
 import { ALERT_LABEL } from "@/lib/alerts-labels";
 import { ago, dateLabel, dateTimeLabel, money, nextBirthday } from "@/lib/format";
 import { createAdminClient, createClient } from "@/lib/db";
-import { checkWeatherFor } from "@/lib/weather";
+import { checkWeatherFor, isTornado } from "@/lib/weather";
 
 export const metadata = { title: "Home" };
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
   const db = await createClient();
   // A located member gets their NWS prompt even without the cron. The check runs after the response,
@@ -20,7 +24,8 @@ export default async function HomePage() {
 
   const now = new Date();
   const week = new Date(now.getTime() + 7 * 86400000);
-  const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts] = await Promise.all([
+  const dayAgo = new Date(now.getTime() - 86400000);
+  const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts, checkins] = await Promise.all([
     db.from("alerts").select("id, kind, message, opened_at, sender:profiles!alerts_sender_id_fkey(display_name)")
       .is("closed_at", null).neq("kind", "notice").order("opened_at", { ascending: false }),
     db.from("alerts").select("id, kind, message, opened_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
@@ -38,9 +43,18 @@ export default async function HomePage() {
     db.from("profiles").select("id, display_name, birthday").eq("active", true).not("birthday", "is", null),
     db.from("listings").select("id, title, offer_type, price_cents, loan_days, owner:profiles(display_name)")
       .eq("status", "available").neq("owner_id", me.id).order("created_at", { ascending: false }).limit(8),
-    db.from("weather_prompts").select("nws_id, event, headline").eq("user_id", me.id).is("answered_alert_id", null)
-      .gt("expires_at", now.toISOString()),
+    db.from("weather_prompts").select("nws_id, event, headline, answered_alert_id").eq("user_id", me.id)
+      .or(`expires_at.is.null,expires_at.gt.${now.toISOString()}`),
+    db.from("alerts").select("id, message, opened_at, closed_at, sender:profiles!alerts_sender_id_fkey(display_name)")
+      .eq("kind", "weather_checkin").gt("opened_at", dayAgo.toISOString()).order("opened_at", { ascending: false }),
   ]);
+
+  // Storm mode: a tornado warning or watch at my home base, or someone in my circles still checked in
+  // as not safe. Check-ins, status and weather then come first and the everyday sections drop below.
+  const tornado = (prompts.data ?? []).filter((p) => isTornado(p.event));
+  const openCheckins = (checkins.data ?? []).filter((c) => !c.closed_at);
+  const storm = tornado.length > 0 || openCheckins.length > 0;
+  const otherPrompts = (prompts.data ?? []).filter((p) => !p.answered_alert_id && !isTornado(p.event));
 
   const read = new Set((receipts.data ?? []).map((r) => r.alert_id));
   const unread = (recent.data ?? []).filter((a) => !read.has(a.id));
@@ -52,8 +66,46 @@ export default async function HomePage() {
   return (
     <div className="space-y-5">
       <PageHeader icon={HomeIcon} title={`Hi, ${me.display_name.split(" ")[0]}`} subtitle={dateLabel(now, { weekday: "long", month: "long", day: "numeric" })} />
+      <Flash searchParams={searchParams} />
 
-      {(prompts.data ?? []).map((p) => (
+      {storm && (
+        <section className="space-y-3 rounded-2xl border-2 border-warn bg-amber-50 p-4 sm:p-5" aria-labelledby="storm-title">
+          <h2 id="storm-title" className="flex items-center gap-2 text-lg font-extrabold text-warn"><Tornado size={22} />
+            {tornado.length ? `${tornado[0].event} at your home base` : "Severe weather in the family"}</h2>
+          {tornado.filter((p) => !p.answered_alert_id).map((p) => (
+            <form key={p.nws_id} action={checkIn} className="space-y-2">
+              <input type="hidden" name="nws_id" value={p.nws_id} />
+              {p.headline && <p className="text-sm text-ink">{p.headline}</p>}
+              <p className="text-sm font-semibold text-ink">Check in. Your answer posts to your circles.</p>
+              <div className="flex flex-wrap gap-2">
+                <ConfirmSubmit name="answer" value="safe" className="btn-primary">Safe</ConfirmSubmit>
+                <ConfirmSubmit name="answer" value="power_out" className="btn-warn">Power out</ConfirmSubmit>
+                <ConfirmSubmit name="answer" value="hurt" className="btn-danger">Hurt</ConfirmSubmit>
+                <ConfirmSubmit name="answer" value="need_contact" className="btn-warn">Need contact</ConfirmSubmit>
+              </div>
+            </form>
+          ))}
+          {tornado.length > 0 && tornado.every((p) => p.answered_alert_id) && <p className="text-sm font-semibold text-ink">You&apos;ve checked in. Update it from the alert if anything changes.</p>}
+          <div>
+            <p className="mb-1 text-xs font-bold tracking-wide text-warn uppercase">Family check-ins, last 24 hours</p>
+            {!checkins.data?.length ? <p className="text-sm text-ink">No one has checked in yet.</p> : (
+              <ul className="divide-y divide-amber-200 text-sm">
+                {checkins.data.map((c) => (
+                  <li key={c.id} className="py-1.5"><Link href={`/alerts/${c.id}`} className="hover:underline">
+                    <b>{(c.sender as unknown as { display_name: string }).display_name}</b> · {c.message} · <span className="text-muted">{ago(c.opened_at)}</span>
+                    {c.closed_at ? <span className="pill ml-1 bg-green-50 text-green-800">closed</span> : <span className="pill ml-1 bg-amber-100 text-warn">open</span>}
+                  </Link></li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <Link href="/weather" className="btn-warn inline-flex">Open Weather</Link>
+        </section>
+      )}
+
+      {me.status_sharing && <StatusBoard me={me} />}
+
+      {otherPrompts.map((p) => (
         <Link key={p.nws_id} href="/weather" className="flex items-center gap-3 rounded-xl border-2 border-warn bg-amber-50 p-4 text-warn">
           <CloudLightning size={22} />
           <span className="flex-1"><b>{p.event}</b> covers your home base. Tell the family how you are.</span>

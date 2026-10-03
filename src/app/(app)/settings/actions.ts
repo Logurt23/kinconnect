@@ -41,3 +41,19 @@ export async function changePassword(f: FormData) {
   const error = await auth().updateUser(me.id, { password }).then(() => null, (e: Error) => e.message);
   back(P, error ? { error } : { ok: "Password changed." });
 }
+
+/** Family status on or off, and which members show on my board (none ticked: the Core circle). */
+export async function saveStatusSettings(f: FormData) {
+  const me = await requireMember();
+  const db = await createClient();
+  const on = str(f, "status_sharing") === "on";
+  const { error } = await db.from("profiles").update({ status_sharing: on }).eq("id", me.id);
+  if (error) back(P, { error: error.message });
+  const picked = f.getAll("watch").map(String).filter((id) => id && id !== me.id);
+  await db.from("status_watch").delete().eq("user_id", me.id);
+  if (picked.length) {
+    const { error: watchError } = await db.from("status_watch").insert(picked.map((member_id) => ({ user_id: me.id, member_id })));
+    if (watchError) back(P, { error: watchError.message });
+  }
+  back(P, { ok: on ? "Family status is on. Your board is on Home." : "Family status is off. Nobody sees your status." });
+}

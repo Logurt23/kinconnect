@@ -6,13 +6,15 @@ import { UseMyLocation } from "@/components/UseMyLocation";
 import { requireMember } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { fileUrl } from "@/lib/storage";
-import { changePassword, saveProfile } from "./actions";
+import { boardPeople } from "@/components/StatusBoard";
+import { changePassword, saveProfile, saveStatusSettings } from "./actions";
 
 export const metadata = { title: "Settings" };
 
 export default async function SettingsPage({ searchParams }: { searchParams: Search }) {
   const me = await requireMember();
   const photo = me.photo_path ? fileUrl("avatars", me.photo_path) : null;
+  const { all, picked } = await boardPeople(me);
   return (
     <div className="max-w-3xl space-y-5">
       <PageHeader icon={Settings} title="Settings" subtitle={me.email} />
@@ -38,6 +40,31 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
           <div className="sm:col-span-2"><ConfirmSubmit className="btn-primary" pending="Saving...">Save profile</ConfirmSubmit></div>
         </form>
       </Section>
+      <section id="status" className="scroll-mt-4">
+        <Section title="Family status">
+          <form action={saveStatusSettings} className="space-y-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" name="status_sharing" defaultChecked={me.status_sharing} className="mt-1 h-5 w-5 accent-brand" />
+              <span><b className="block text-sm">Share my status and show the family board on Home</b>
+                <span className="text-sm text-muted">Safe, Still exploring, Away, Out of town, On vacation, SOS and more, set with one tap.
+                  Only people in your circles who also have this on can see it. Turn it off and your status is hidden.</span></span>
+            </label>
+            <fieldset>
+              <legend className="label">Who shows on my board</legend>
+              <p className="mb-2 text-xs text-muted">Leave everyone unticked to show your Core circle.</p>
+              <div className="flex flex-wrap gap-2">
+                {all.map((p) => (
+                  <label key={p.id} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-3.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-soft sm:min-h-9">
+                    <input type="checkbox" name="watch" value={p.id} defaultChecked={picked.has(p.id)} className="h-4 w-4 accent-brand" />
+                    {p.display_name}{!p.status_sharing && <span className="text-xs text-muted">(not sharing)</span>}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <ConfirmSubmit className="btn-primary" pending="Saving...">Save family status</ConfirmSubmit>
+          </form>
+        </Section>
+      </section>
       <Section title="Password">
         <form action={changePassword} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <div><label className="label" htmlFor="password">New password</label><input className="input" id="password" name="password" type="password" minLength={8} autoComplete="new-password" required /></div>

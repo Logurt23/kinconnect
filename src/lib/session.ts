@@ -1,4 +1,5 @@
 import "server-only";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { getApps, initializeApp } from "firebase-admin/app";
@@ -62,7 +63,44 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
-  (await cookies()).delete(SESSION_COOKIE);
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
+  jar.delete(VAULT_COOKIE);
+}
+
+/** Checks a password without starting a session (for resetting the vault PIN). */
+export async function passwordMatches(email: string, password: string) {
+  const r = await toolkit("accounts:signInWithPassword", { email, password, returnSecureToken: false });
+  return Boolean(r.data);
+}
+
+/**
+ * The vault's locked section opens for 15 minutes after the PIN is checked. The cookie is signed by the
+ * server and names the member; while it's valid, their database token says vault_unlocked, and RLS only
+ * shows locked items to a token that says so.
+ */
+const VAULT_COOKIE = "kc_vault";
+export const VAULT_MINUTES = 15;
+const vaultSig = (body: string) => createHmac("sha256", `vault-unlock:${process.env.PGRST_JWT_SECRET}`).update(body).digest("base64url");
+
+export async function unlockVault(userId: string) {
+  const body = `${userId}.${Date.now() + VAULT_MINUTES * 60000}`;
+  (await cookies()).set(VAULT_COOKIE, `${body}.${vaultSig(body)}`, {
+    httpOnly: true, secure: process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https") ?? false, sameSite: "strict", path: "/", maxAge: VAULT_MINUTES * 60,
+  });
+}
+
+export async function lockVault() {
+  (await cookies()).delete(VAULT_COOKIE);
+}
+
+export async function vaultUnlockedFor(userId: string) {
+  const raw = (await cookies()).get(VAULT_COOKIE)?.value ?? "";
+  const [uid, exp, sig] = raw.split(".");
+  if (!uid || !exp || !sig || uid !== userId || Number(exp) < Date.now()) return false;
+  const want = Buffer.from(vaultSig(`${uid}.${exp}`));
+  const got = Buffer.from(sig);
+  return got.length === want.length && timingSafeEqual(got, want);
 }
 
 /**

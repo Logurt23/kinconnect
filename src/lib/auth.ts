@@ -16,6 +16,8 @@ export type Member = {
   lon: number | null;
   role: "admin" | "member";
   active: boolean;
+  /** Shares their status and sees the family status board (Settings). */
+  status_sharing: boolean;
   circles: Circle[];
 };
 

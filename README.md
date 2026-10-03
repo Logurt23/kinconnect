@@ -15,7 +15,7 @@ Built on Next.js 16 (App Router) and Google Cloud only:
 | Secrets | Secret Manager | Mounted into the Cloud Run containers as env vars |
 | Sweeps | Cloud Scheduler | Calls `/api/cron/weather` (every 15 min) and `/api/cron/calendars` (hourly) |
 
-Live alerts: open pages poll `/api/live` every 10 seconds and refresh when an alert they can see opens,
+Live alerts: open pages poll `/api/live` every 10 seconds and refresh when a status changes or an alert they can see opens,
 closes or gets an update.
 
 ## Run locally
@@ -179,7 +179,19 @@ background work is slowed, which is fine because the 15-minute sweep is the main
 - Google refresh tokens are AES-256-GCM encrypted and only readable by the service role.
 - The 911 button tells the family. It never contacts 911, and says so.
 - A requester can only cancel their own reservation; confirming, declining and returning are the owner's (a trigger enforces it).
-- Uploads are typed by their first bytes, not the browser's claim; only images (and PDFs in the vault) are stored.
+- Uploads are typed by their bytes, not the browser's claim. Photos and avatars must be images; the vault
+  takes plain text only (valid UTF-8, no binary), so images, video, PDFs and Office files are refused.
+- Vault space is 1 GB per member, locked section included; a database trigger refuses anything over it.
+- The vault's locked section needs a PIN (4 to 8 digits, scrypt-hashed, 5 tries then a 15-minute block;
+  resetting it asks for the account password). A correct PIN sets a signed 15-minute cookie, and only then
+  does the member's database token carry `vault_unlocked`, which RLS requires for locked rows and files.
+  Locked files can't be shared.
+- Family status is off until a member turns it on in Settings. A status is visible only to people who
+  share a circle with that member and have it on themselves. SOS asks first, then sends a family
+  emergency to the member's circles; setting Safe closes it. Statuses are set by tapping: a website
+  can't follow anyone's location in the background.
+- A tornado warning or watch at a member's home base (or an open family weather check-in) puts Home in
+  storm mode: check-ins, status and weather come first.
 - Sign-up is off in Identity Platform; accounts are made by the invite action. Deactivating a member
   disables their account and their profile, so they can't sign in and RLS shows them nothing.
 - Calendar subscribe links are fetched only from public addresses, re-checked on every redirect, capped at 5 MB.
