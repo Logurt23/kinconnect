@@ -9,7 +9,9 @@ export function back(path: string, msg: { error?: string; ok?: string } = {}): n
   if (msg.error) q.set("error", msg.error);
   if (msg.ok) q.set("ok", msg.ok);
   const s = q.toString();
-  redirect(s ? `${path}${path.includes("?") ? "&" : "?"}${s}` : path);
+  // Keep any #anchor at the end, after the message.
+  const [base, hash] = path.split("#");
+  redirect(`${s ? `${base}${base.includes("?") ? "&" : "?"}${s}` : base}${hash ? `#${hash}` : ""}`);
 }
 
 export const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();

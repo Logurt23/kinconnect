@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { after } from "next/server";
-import { AlertTriangle, CloudLightning, Home as HomeIcon, Siren, Tornado } from "lucide-react";
+import { AlertTriangle, CloudLightning, Home as HomeIcon, ShoppingBasket, Siren, Tornado } from "lucide-react";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { Flash, type Search } from "@/components/Flash";
 import { PollCard, isOpen, loadPolls } from "@/components/PollCard";
@@ -26,7 +26,7 @@ export default async function HomePage({ searchParams }: { searchParams: Search 
   const now = new Date();
   const week = new Date(now.getTime() + 7 * 86400000);
   const dayAgo = new Date(now.getTime() - 86400000);
-  const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts, checkins, polls, circles] = await Promise.all([
+  const [open, recent, receipts, mineReserved, toDecide, claimedByMe, owed, events, people, listings, prompts, checkins, polls, circles, groceries] = await Promise.all([
     db.from("alerts").select("id, kind, message, opened_at, sender:profiles!alerts_sender_id_fkey(display_name)")
       .is("closed_at", null).neq("kind", "notice").order("opened_at", { ascending: false }),
     db.from("alerts").select("id, kind, message, opened_at, sender_id, sender:profiles!alerts_sender_id_fkey(display_name)")
@@ -50,6 +50,8 @@ export default async function HomePage({ searchParams }: { searchParams: Search 
       .eq("kind", "weather_checkin").gt("opened_at", dayAgo.toISOString()).order("opened_at", { ascending: false }),
     loadPolls(db, 20),
     allCircles(),
+    db.from("grocery_lists").select("id, title, shop_on, owner:profiles!grocery_lists_owner_id_fkey(display_name), items:grocery_items(added_by, checked_at)")
+      .is("closed_at", null).order("created_at", { ascending: false }).limit(4),
   ]);
   // Open polls from someone else that I haven't answered yet.
   const pollsForMe = polls.filter((p) => isOpen(p) && p.author_id !== me.id && !p.votes.some((v) => v.user_id === me.id));
@@ -138,6 +140,26 @@ export default async function HomePage({ searchParams }: { searchParams: Search 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {pollsForMe.slice(0, 4).map((p) => <PollCard key={p.id} poll={p} meId={me.id} circles={circles} from="/" />)}
           </div>
+        </Section>
+      )}
+
+      {!!groceries.data?.length && (
+        <Section title="Grocery lists" action={<Link href="/groceries" className="text-xs font-semibold text-brand">Groceries</Link>}>
+          <ul className="divide-y divide-line">
+            {groceries.data.map((g) => {
+              const items = g.items as unknown as { added_by: string; checked_at: string | null }[];
+              const mine = items.filter((i) => i.added_by === me.id).length;
+              return (
+                <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    <ShoppingBasket size={18} className="shrink-0 text-brand" />
+                    <span className="min-w-0"><b>{g.title}</b> <span className="text-muted">· {(g.owner as unknown as { display_name: string }).display_name}{g.shop_on ? ` · ${dateLabel(g.shop_on, { weekday: "short", month: "short", day: "numeric" })}` : ""} · {items.length} {items.length === 1 ? "item" : "items"}{mine ? `, ${mine} yours` : ""}</span></span>
+                  </span>
+                  <Link href={`/groceries#list-${g.id}`} className="btn-small">Add what you want</Link>
+                </li>
+              );
+            })}
+          </ul>
         </Section>
       )}
 
