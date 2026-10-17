@@ -113,7 +113,7 @@ What Logan must supply: a GCP project, and optionally a Google OAuth client for 
   emulator, fake-gcs-server, Docker Postgres and PostgREST), so expect small fixes on the first deploy:
   Cloud Run sidecars, Identity Platform's real email links, Cloud SQL connectivity.
 - Google Calendar OAuth has never been tested against real Google.
-- GitHub runs no CI on the PR; all checks run locally.
+- GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and build on each push. The browser suite (`e2e/run.sh`) still runs only locally.
 - The calendar-link guard checks the address before fetching, so DNS rebinding between the check and the
   connection is still theoretically possible (accepted for a family app).
 - Live updates are polling (10 s), not push.
