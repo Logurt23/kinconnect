@@ -1,7 +1,8 @@
 # KinConnect: project context
 
 Read this first when picking the project up in a fresh chat. It records what the code alone doesn't:
-decisions, open questions and where things stand. Last updated 2026-10-17.
+decisions, open questions and where things stand. Last updated 2026-10-17. For how the project got here,
+chat by chat, see [`docs/SESSION-HISTORY.md`](docs/SESSION-HISTORY.md).
 
 ## What it is
 
