@@ -2,7 +2,9 @@
 
 Read this first when picking the project up in a fresh chat. It records what the code alone doesn't:
 decisions, open questions and where things stand. Last updated 2026-10-17. For how the project got here,
-chat by chat, see [`docs/SESSION-HISTORY.md`](docs/SESSION-HISTORY.md).
+chat by chat, see [`docs/SESSION-HISTORY.md`](docs/SESSION-HISTORY.md). For the local test setup on Logan's
+PC and the traps already solved (emulator quirks, RLS, Windows), see
+[`docs/PC-SESSION-NOTES.md`](docs/PC-SESSION-NOTES.md).
 
 ## What it is
 
