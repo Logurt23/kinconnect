@@ -1,7 +1,8 @@
 # KinConnect: project context
 
 Read this first when picking the project up in a fresh chat. It records what the code alone doesn't:
-decisions, open questions and where things stand. Last updated 2026-10-17. For how the project got here,
+decisions, open questions and where things stand. Last updated 2026-10-20. The latest status report is
+[`docs/REPORT-2026-10-20.md`](docs/REPORT-2026-10-20.md). For how the project got here,
 chat by chat, see [`docs/SESSION-HISTORY.md`](docs/SESSION-HISTORY.md). For the local test setup on Logan's
 PC and the traps already solved (emulator quirks, RLS, Windows), see
 [`docs/PC-SESSION-NOTES.md`](docs/PC-SESSION-NOTES.md).
@@ -73,6 +74,7 @@ package is only the PostgREST client; nothing talks to Supabase.
 - **Groceries:** shared lists for chosen circles. Everyone adds items from their own account (amount, note,
   who asked). The shopper ticks items into "In the cart", live on everyone's screen. The list owner can
   clear, close or delete it.
+- GitHub Actions CI (`.github/workflows/ci.yml`, added 2026-10-17): lint, typecheck and build on every push.
 - Hardening: CSP and security headers, SSRF-safe calendar fetching, upload type sniffing, a reservation
   guard trigger, timing-safe cron auth. The report is in the project files (`kinroot/hardening-report.md`).
 
@@ -97,9 +99,12 @@ optional.
 **Run `npm run db:migrate` against Cloud SQL on every deploy.** It applies the new `db/` files (status and
 vault, polls, groceries).
 
-What Logan must supply: a GCP project, and optionally a Google OAuth client for Calendar.
+What Logan must supply: a GCP project ID and region, a service account Claude can deploy with, and
+optionally a Google OAuth client for Calendar. As of 2026-10-20 none has been supplied yet.
 
 ## Open questions for Logan (defaults in place)
+
+Still unanswered as of 2026-10-20.
 
 1. **PDFs in the vault?** He said text files only, so PDFs are refused for now.
 2. **Tap to mark Safe?** Statuses are set by tapping. A website can't track location in the background;
@@ -120,6 +125,7 @@ What Logan must supply: a GCP project, and optionally a Google OAuth client for 
 
 ## Likely next
 
-1. Answer the three open questions and adjust the defaults.
-2. First real deploy to GCP following the README, then fix whatever it turns up.
+1. First real deploy to GCP following the README, then fix whatever it turns up (recommended first,
+   since everything else builds on a working deploy).
+2. Answer the three open questions and adjust the defaults.
 3. Invite the family, then mark PR #1 ready and merge it into `main`.

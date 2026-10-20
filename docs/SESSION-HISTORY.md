@@ -17,7 +17,9 @@ this file is the story behind them. Times are UTC.
 | 2026-10-03 | Family status board, SOS, storm mode, text-only PIN vault | d4d11b5 |
 | 2026-10-03 | Quick polls | 418d691 |
 | 2026-10-07 | Shared grocery lists | b729b65 |
-| 2026-10-17 | `CONTEXT.md` and this history added for a fresh chat | b173ca4 and this commit |
+| 2026-10-17 | `CONTEXT.md` and this history added for a fresh chat | b173ca4, 84a5354 |
+| 2026-10-17 | Fresh chat: catch-up, PR description refreshed, GitHub Actions CI | 88a7f76 |
+| 2026-10-20 | Status report for the next chat ([`REPORT-2026-10-20.md`](REPORT-2026-10-20.md)) | this commit |
 
 ## 1. The brief and the first build (2026-10-02)
 
