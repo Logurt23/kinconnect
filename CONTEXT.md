@@ -1,7 +1,7 @@
 # KinConnect: project context
 
 Read this first when picking the project up in a fresh chat. It records what the code alone doesn't:
-decisions, open questions and where things stand. Last updated 2026-10-20. The latest status report is
+decisions, open questions and where things stand. Last updated 2026-10-21. The latest status report is
 [`docs/REPORT-2026-10-20.md`](docs/REPORT-2026-10-20.md). For how the project got here,
 chat by chat, see [`docs/SESSION-HISTORY.md`](docs/SESSION-HISTORY.md). For the local test setup on Logan's
 PC and the traps already solved (emulator quirks, RLS, Windows), see
@@ -33,7 +33,9 @@ scraping.
 - Logan's working copy is on his Windows PC at `E:\Claude\KinConnect`. The local stand-in services used for
   tests live in `E:\Claude\kinconnect-devstack`, outside the repo.
 - Secrets live only in `.env.local` (git-ignored) and, in production, in Secret Manager. Never commit them.
-- A click-through screen tour of every page: https://claude.ai/artifact/7epyDmb98mkvu9MCX5AEFC
+- The interactive prototype of the next round of features is `docs/preview/index.html` (open it in a browser; it is one
+  self-contained file). It is also published at https://claude.ai/artifact/Au6JaVUBmuqC5QyewxzWsV. See
+  "Prototype features not yet in the app" below.
 
 ## Stack (all Google Cloud)
 
@@ -77,6 +79,47 @@ package is only the PostgREST client; nothing talks to Supabase.
 - GitHub Actions CI (`.github/workflows/ci.yml`, added 2026-10-17): lint, typecheck and build on every push.
 - Hardening: CSP and security headers, SSRF-safe calendar fetching, upload type sniffing, a reservation
   guard trigger, timing-safe cron auth. The report is in the project files (`kinroot/hardening-report.md`).
+
+## Prototype features not yet in the app (designed 2026-10-19 to 10-21)
+
+Everything in this section exists only in `docs/preview/index.html`, built and tested in chat with Logan. None of it is in
+the Next.js app yet. It is the spec for the next build: port it screen by screen, with RLS for every new table.
+
+- **Viewing as.** The prototype switches between Logan (parent/admin), Ava (kid, 9) and June (grandparent, simple mode).
+  Names are shown from the viewer's side (Ava sees "Mom" and "Dad").
+- **Family emergency tiers.** Yellow "Family emergency" button next to SOS. Low / Medium / High, pick circles or people.
+  High adds the Emergency contacts circle. Receivers tap "I'm on it"; sender sees "seen by" and can close it.
+  Optional live location until closed (SOS always shares it). Text-message backup to anyone who hasn't seen it in 5 min.
+- **Enigma** (family messaging, app-wide): 1:1 and group chats, photos and voice messages that delete after 24 hours,
+  reactions, read receipts, "Message" buttons on resources, requests, alerts and status tiles.
+  **Logan chose the label "End-to-end encrypted"; real E2E encryption has to ship before this goes live.**
+- **Circles:** templates (Household, Siblings, In-laws, Cousins, Close friends, Emergency contacts), color, edit, delete.
+- **Groceries:** collapsible lists, "I'm shopping now", meal planner, recipe box that feeds the planner.
+- **Kid accounts** (parents set them in Settings): kids don't see Carpool, Requests, Resources, Upkeep, Ledger or Vault.
+  Kid-specific look and home: points, chores with "I did it!", routines, pickup, family strip. Parents choose who kids may
+  start chats with, and kids' emergencies always reach their parents. Quiet hours 9 PM to 7 AM.
+- **Chores use "parent points", not money.** Points store with rewards a parent okays. Morning and bedtime routines.
+- **Simple mode** (for grandparents; on per person, admins can turn it on): big text and buttons, status card, Messages /
+  Alerts / Family / Calendar tiles, a "What's new" feed of actionable cards, "See everything" opens any screen enlarged.
+- **KinHelper** (simple mode): "What do you want to do?" bar, say or type. It does the action or opens the screen, shows an
+  animated summary of the steps, then the user taps "Yes, that's right" or Undo. Calls always need "Confirm to call".
+- **Daily "How do you feel?"** with five answers; Not great or Bad asks "Are you OK?" (I'm OK / I need help / Call someone).
+  Answers go only to the people the user picks; parents see them under Family, Feelings.
+- **Medicine reminders** with a nudge to chosen family if missed. **Read aloud** for updates and chats.
+- **Calls** everywhere go through a "Confirm to call" panel showing the number.
+- **Offline:** the app opens and works with no signal, queues changes and sends them on reconnect (including emergencies,
+  which say "Not sent yet, call 911 in a real emergency" while offline). Saves its data on the phone.
+- Also: Medical ID (share circle, lock-screen image, wallet), emergency plan screen, storm power board (power out / can
+  host / generator), Pets, Carpool with swaps, event RSVPs and potluck slots, renewal reminders, Secret Santa (no drawing
+  within a household), family tree, family stories (voice, kept for good), babysitter guest passes, School hub, Upkeep
+  (house jobs, vehicles, "Where is it?"), holiday host rotation, group birthday cards, thank-you wall, savings goals
+  (pledges only), install prompt with per-type notification settings, calendar subscribe link.
+- Hardening found in testing, to carry into the real build: tap-through guard on lists that shift, unique IDs, length
+  limits on every text field, refuse past event dates and odometer readings that go backwards, "overdue by" wording,
+  Forgot PIN for the vault, focus stays inside open panels, and anything queued offline sends on next launch.
+
+Decisions from these sessions: Logan does not want the go-bag checklist, the shared photo album or the weekly email
+digest. PDFs in the vault, auto "got home" and admin-only grocery lists were not revisited (defaults stand).
 
 ## Run and test locally
 
@@ -124,6 +167,9 @@ Still unanswered as of 2026-10-20.
 - Live updates are polling (10 s), not push.
 
 ## Likely next
+
+0. Port the prototype features above into the app, starting with emergency tiers, Enigma (with real encryption),
+   kid accounts and simple mode.
 
 1. First real deploy to GCP following the README, then fix whatever it turns up (recommended first,
    since everything else builds on a working deploy).
